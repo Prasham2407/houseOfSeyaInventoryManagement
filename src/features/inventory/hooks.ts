@@ -88,6 +88,14 @@ export function useCreateCategory() {
   });
 }
 
+export function useUpdateCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: api.CategoryInput }) => api.updateCategory(id, input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: categoryKeys.all }),
+  });
+}
+
 export function useDeleteCategory() {
   const queryClient = useQueryClient();
   return useMutation({

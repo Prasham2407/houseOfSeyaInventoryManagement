@@ -16,11 +16,8 @@ import {
 import { useDeleteProduct, useProducts } from './hooks';
 import { ProductFormModal } from './ProductFormModal';
 import { RestockModal } from './RestockModal';
+import { formatCurrency } from '@/lib/format';
 import type { Product } from '@/types';
-
-function currency(n: number) {
-  return n.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
-}
 
 export function ProductsListPage() {
   const { data: products, isLoading } = useProducts();
@@ -62,7 +59,7 @@ export function ProductsListPage() {
       ),
     },
     { key: 'category', header: 'Category', render: (p) => p.categoryName ?? <span className="text-graphite-300">—</span> },
-    { key: 'price', header: 'Unit price', align: 'right', render: (p) => currency(p.unitPrice) },
+    { key: 'price', header: 'Unit price', align: 'right', render: (p) => formatCurrency(p.unitPrice) },
     {
       key: 'stock',
       header: 'Stock',
@@ -128,7 +125,7 @@ export function ProductsListPage() {
         action={<Button onClick={openCreate} icon={<Plus className="h-4 w-4" strokeWidth={2} />}>Add product</Button>}
       />
 
-      <div className="mb-4 max-w-xs">
+      <div className="mb-4 w-full max-w-xs">
         <Input placeholder="Search by name or SKU" value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 

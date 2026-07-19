@@ -80,7 +80,7 @@ export function ProductFormModal({
       }
     >
       <form id="product-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input label="SKU" placeholder="FAB-COT-001" error={errors.sku?.message} {...register('sku')} />
           <Select label="Category" error={errors.categoryId?.message} {...register('categoryId')}>
             <option value="">Uncategorized</option>
@@ -93,7 +93,7 @@ export function ProductFormModal({
         </div>
         <Input label="Product name" placeholder="Cotton Poplin — Ivory" error={errors.name?.message} {...register('name')} />
         <Input label="Description (optional)" placeholder="Short description" error={errors.description?.message} {...register('description')} />
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Input label="Unit price" type="number" step="0.01" min="0" error={errors.unitPrice?.message} {...register('unitPrice')} />
           <Input
             label="Stock qty"

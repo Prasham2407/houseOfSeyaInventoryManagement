@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, DollarSign, Package, Users } from 'lucide-react';
+import { AlertTriangle, IndianRupee, Package, Users } from 'lucide-react';
 import {
   Badge,
   Card,
@@ -12,8 +12,9 @@ import {
   Table,
   type Column,
 } from '@/components/ui';
+import { formatCurrency } from '@/lib/format';
 import { useDashboardSummary } from './hooks';
-import { InvoiceStatusBadge, currency } from '@/features/invoices/statusBadge';
+import { InvoiceStatusBadge } from '@/features/invoices/statusBadge';
 import type { Invoice, Product } from '@/types';
 
 export function DashboardPage() {
@@ -26,7 +27,7 @@ export function DashboardPage() {
     { key: 'number', header: 'Invoice', render: (inv) => <span className="font-medium text-graphite-900">{inv.invoiceNumber}</span> },
     { key: 'customer', header: 'Customer', render: (inv) => inv.customerName },
     { key: 'status', header: 'Status', render: (inv) => <InvoiceStatusBadge status={inv.status} /> },
-    { key: 'total', header: 'Total', align: 'right', render: (inv) => currency(inv.total) },
+    { key: 'total', header: 'Total', align: 'right', render: (inv) => formatCurrency(inv.total) },
   ];
 
   const productColumns: Column<Product>[] = [
@@ -68,8 +69,8 @@ export function DashboardPage() {
         <StatTile label="Customers" value={data.totalCustomers} icon={<Users className="h-4 w-4" strokeWidth={2} />} />
         <StatTile
           label="Revenue this month"
-          value={currency(data.revenueThisMonth)}
-          icon={<DollarSign className="h-4 w-4" strokeWidth={2} />}
+          value={formatCurrency(data.revenueThisMonth)}
+          icon={<IndianRupee className="h-4 w-4" strokeWidth={2} />}
           hint={`${data.invoicesThisMonth} invoice(s)`}
         />
       </div>

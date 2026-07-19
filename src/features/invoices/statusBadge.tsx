@@ -11,7 +11,3 @@ const toneByStatus: Record<InvoiceStatus, 'neutral' | 'info' | 'success' | 'dang
 export function InvoiceStatusBadge({ status }: { status: InvoiceStatus }) {
   return <Badge tone={toneByStatus[status]}>{status}</Badge>;
 }
-
-export function currency(n: number) {
-  return n.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
-}

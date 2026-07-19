@@ -22,8 +22,9 @@ export function AppShell() {
   const { user, logout } = useAuth();
 
   return (
-    <div className="flex min-h-screen bg-graphite-50">
-      <aside className="flex w-60 flex-col border-r border-graphite-200 bg-white">
+    <div className="flex min-h-screen flex-col bg-graphite-50 lg:flex-row">
+      {/* Desktop sidebar (lg+) */}
+      <aside className="hidden w-60 shrink-0 flex-col border-r border-graphite-200 bg-white lg:flex">
         <div className="flex items-center gap-2.5 px-5 py-5">
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-brand-700 text-[13px] font-bold tracking-tight text-white">
             HS
@@ -78,11 +79,55 @@ export function AppShell() {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-6xl px-8 py-8">
+      {/* Mobile top bar (< lg) */}
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-graphite-200 bg-white px-4 py-3 lg:hidden">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-brand-700 text-[13px] font-bold tracking-tight text-white">
+            HS
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-[13px] font-semibold leading-tight text-graphite-900">House of Seya</p>
+            <p className="truncate text-[11px] leading-tight text-graphite-400">{user?.name} · {user?.role}</p>
+          </div>
+        </div>
+        <button
+          onClick={() => logout()}
+          aria-label="Sign out"
+          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md text-graphite-500 hover:bg-graphite-100 hover:text-graphite-800"
+        >
+          <LogOut className="h-[17px] w-[17px]" strokeWidth={2} />
+        </button>
+      </header>
+
+      {/* Main content */}
+      <main className="flex min-w-0 flex-1 flex-col">
+        <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <Outlet />
         </div>
       </main>
+
+      {/* Mobile bottom tab bar (< lg) */}
+      <nav className="sticky bottom-0 z-30 flex items-stretch justify-around border-t border-graphite-200 bg-white lg:hidden">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={({ isActive }) =>
+                cn(
+                  'flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 py-2 text-[10px] font-medium transition-colors',
+                  isActive ? 'text-brand-700' : 'text-graphite-500 hover:text-graphite-800',
+                )
+              }
+            >
+              <Icon className="h-5 w-5 shrink-0" strokeWidth={2} />
+              <span className="max-w-full truncate">{item.label}</span>
+            </NavLink>
+          );
+        })}
+      </nav>
     </div>
   );
 }

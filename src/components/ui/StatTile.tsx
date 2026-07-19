@@ -29,7 +29,7 @@ export function StatTile({
   hint?: string;
 }) {
   return (
-    <div className="rounded-lg border border-graphite-200 bg-white p-5 shadow-sm">
+    <div className="rounded-lg border border-graphite-200 bg-white p-4 shadow-sm sm:p-5">
       <div className="flex items-center justify-between">
         <span className="text-[13px] font-medium text-graphite-500">{label}</span>
         {icon && (
@@ -38,7 +38,7 @@ export function StatTile({
           </span>
         )}
       </div>
-      <p className={cn('mt-3 text-[26px] font-semibold leading-none tabular-nums', toneAccent[tone])}>{value}</p>
+      <p className={cn('mt-3 text-[22px] font-semibold leading-none tabular-nums sm:text-[26px]', toneAccent[tone])}>{value}</p>
       {hint && <p className="mt-2 text-xs text-graphite-400">{hint}</p>}
     </div>
   );

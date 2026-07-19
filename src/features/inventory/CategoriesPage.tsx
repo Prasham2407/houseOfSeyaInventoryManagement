@@ -1,9 +1,5 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Plus, Trash2 } from 'lucide-react';
-import { extractErrorMessage } from '@/lib/apiClient';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
 import {
   Badge,
   Button,
@@ -12,48 +8,31 @@ import {
   EmptyState,
   FullPageSpinner,
   IconButton,
-  Input,
-  Modal,
   PageHeader,
   Table,
   type Column,
 } from '@/components/ui';
-import { useCategories, useCreateCategory, useDeleteCategory } from './hooks';
+import { useCategories, useDeleteCategory } from './hooks';
+import { CategoryFormModal } from './CategoryFormModal';
+import { extractErrorMessage } from '@/lib/apiClient';
 import type { Category } from '@/types';
-
-const schema = z.object({ name: z.string().min(1, 'Name is required') });
-type FormValues = z.infer<typeof schema>;
 
 export function CategoriesPage() {
   const { data: categories, isLoading } = useCategories();
-  const createCategory = useCreateCategory();
   const deleteCategory = useDeleteCategory();
   const [formOpen, setFormOpen] = useState(false);
-  const [serverError, setServerError] = useState<string | null>(null);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<FormValues>({ resolver: zodResolver(schema) });
-
-  const onSubmit = async (values: FormValues) => {
-    setServerError(null);
-    try {
-      await createCategory.mutateAsync(values);
-      reset();
-      setFormOpen(false);
-    } catch (err) {
-      setServerError(extractErrorMessage(err, 'Something went wrong.'));
-    }
+  const openCreate = () => {
+    setEditingCategory(null);
+    setFormOpen(true);
   };
 
-  const openDelete = (category: Category) => {
-    setDeleteError(null);
-    setDeleteTarget(category);
+  const openEdit = (category: Category) => {
+    setEditingCategory(category);
+    setFormOpen(true);
   };
 
   const handleDelete = async () => {
@@ -75,8 +54,11 @@ export function CategoriesPage() {
       header: '',
       align: 'right',
       render: (c) => (
-        <div className="flex justify-end">
-          <IconButton label="Delete category" tone="danger" onClick={() => openDelete(c)}>
+        <div className="flex justify-end gap-1">
+          <IconButton label="Edit category" tone="brand" onClick={() => openEdit(c)}>
+            <Pencil className="h-4 w-4" strokeWidth={2} />
+          </IconButton>
+          <IconButton label="Delete category" tone="danger" onClick={() => { setDeleteError(null); setDeleteTarget(c); }}>
             <Trash2 className="h-4 w-4" strokeWidth={2} />
           </IconButton>
         </div>
@@ -91,37 +73,22 @@ export function CategoriesPage() {
       <PageHeader
         title="Categories"
         description="Group products for easier browsing and reporting."
-        action={<Button onClick={() => setFormOpen(true)} icon={<Plus className="h-4 w-4" strokeWidth={2} />}>Add category</Button>}
+        action={<Button onClick={openCreate} icon={<Plus className="h-4 w-4" strokeWidth={2} />}>Add category</Button>}
       />
 
       <Card>
         {!categories || categories.length === 0 ? (
-          <EmptyState title="No categories yet" description="Create a category to start organizing products." />
+          <EmptyState
+            title="No categories yet"
+            description="Create a category to start organizing products."
+            action={<Button onClick={openCreate} icon={<Plus className="h-4 w-4" strokeWidth={2} />}>Add category</Button>}
+          />
         ) : (
           <Table columns={columns} rows={categories} getRowKey={(c) => c.id} />
         )}
       </Card>
 
-      <Modal
-        isOpen={formOpen}
-        onClose={() => setFormOpen(false)}
-        title="Add category"
-        footer={
-          <>
-            <Button variant="secondary" type="button" onClick={() => setFormOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" form="category-form" isLoading={isSubmitting}>
-              Add category
-            </Button>
-          </>
-        }
-      >
-        <form id="category-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-          <Input label="Category name" placeholder="e.g. Fabrics" error={errors.name?.message} {...register('name')} />
-          {serverError && <p className="text-sm text-red-600">{serverError}</p>}
-        </form>
-      </Modal>
+      <CategoryFormModal isOpen={formOpen} onClose={() => setFormOpen(false)} category={editingCategory} />
 
       <ConfirmModal
         isOpen={!!deleteTarget}

@@ -22,16 +22,16 @@ export function CardHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-graphite-100 px-5 py-4">
-      <div>
+    <div className="flex items-start justify-between gap-4 border-b border-graphite-100 px-4 py-3 sm:px-5 sm:py-4">
+      <div className="min-w-0">
         <h2 className="text-[15px] font-semibold text-graphite-900">{title}</h2>
         {description && <p className="mt-0.5 text-sm text-graphite-500">{description}</p>}
       </div>
-      {action}
+      {action && <div className="shrink-0">{action}</div>}
     </div>
   );
 }
 
 export function CardBody({ className, children }: { className?: string; children: ReactNode }) {
-  return <div className={cn('px-5 py-4', className)}>{children}</div>;
+  return <div className={cn('px-4 py-3 sm:px-5 sm:py-4', className)}>{children}</div>;
 }

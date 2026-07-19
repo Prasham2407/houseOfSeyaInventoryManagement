@@ -2,11 +2,11 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2 } from 'lucide-react';
 import { extractErrorMessage } from '@/lib/apiClient';
+import { formatCurrency } from '@/lib/format';
 import { Button, Card, CardBody, CardHeader, EmptyState, IconButton, Input, PageHeader, Select } from '@/components/ui';
 import { useCustomers } from '@/features/customers/hooks';
 import { useProducts } from '@/features/inventory/hooks';
 import { useCreateInvoice } from './hooks';
-import { currency } from './statusBadge';
 
 interface DraftLine {
   productId: string;
@@ -121,8 +121,8 @@ export function InvoiceFormPage() {
                   {lines.map((line, index) => {
                     const product = productById.get(line.productId);
                     return (
-                      <div key={index} className="grid grid-cols-12 items-end gap-3 rounded-lg border border-graphite-100 p-3">
-                        <div className="col-span-6">
+                      <div key={index} className="grid grid-cols-1 items-end gap-3 rounded-lg border border-graphite-100 p-3 sm:grid-cols-12">
+                        <div className="sm:col-span-6">
                           <Select
                             label="Product"
                             value={line.productId}
@@ -136,7 +136,7 @@ export function InvoiceFormPage() {
                             ))}
                           </Select>
                         </div>
-                        <div className="col-span-2">
+                        <div className="sm:col-span-2">
                           <Input
                             label="Qty"
                             type="number"
@@ -146,15 +146,15 @@ export function InvoiceFormPage() {
                             onChange={(e) => updateLine(index, { quantity: Number(e.target.value) })}
                           />
                         </div>
-                        <div className="col-span-2 text-right text-sm text-graphite-500">
+                        <div className="flex items-end justify-between gap-2 sm:col-span-2 sm:block sm:text-right sm:text-sm sm:text-graphite-500">
                           {product && (
                             <>
-                              <p className="text-xs text-graphite-400">In stock: {product.quantityInStock}</p>
-                              <p className="font-medium text-graphite-800">{currency(product.unitPrice * line.quantity)}</p>
+                              <p className="text-xs text-graphite-400 sm:text-xs">In stock: {product.quantityInStock}</p>
+                              <p className="font-medium text-graphite-800 sm:font-medium sm:text-graphite-800">{formatCurrency(product.unitPrice * line.quantity)}</p>
                             </>
                           )}
                         </div>
-                        <div className="col-span-2 flex justify-end">
+                        <div className="flex justify-end sm:col-span-2">
                           <IconButton label="Remove line item" tone="danger" onClick={() => removeLine(index)}>
                             <Trash2 className="h-4 w-4" strokeWidth={2} />
                           </IconButton>
@@ -175,15 +175,15 @@ export function InvoiceFormPage() {
               <dl className="flex flex-col gap-2 text-sm">
                 <div className="flex justify-between">
                   <dt className="text-graphite-500">Subtotal</dt>
-                  <dd className="font-medium text-graphite-800">{currency(subtotal)}</dd>
+                  <dd className="font-medium text-graphite-800">{formatCurrency(subtotal)}</dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-graphite-500">Tax (10%)</dt>
-                  <dd className="font-medium text-graphite-800">{currency(tax)}</dd>
+                  <dd className="font-medium text-graphite-800">{formatCurrency(tax)}</dd>
                 </div>
                 <div className="mt-1 flex justify-between border-t border-graphite-100 pt-2 text-base">
                   <dt className="font-semibold text-graphite-900">Total</dt>
-                  <dd className="font-semibold text-graphite-900">{currency(total)}</dd>
+                  <dd className="font-semibold text-graphite-900">{formatCurrency(total)}</dd>
                 </div>
               </dl>
 

@@ -1,8 +1,9 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { extractErrorMessage } from '@/lib/apiClient';
+import { formatCurrency } from '@/lib/format';
 import { Button, Card, CardBody, CardHeader, FullPageSpinner, PageHeader, Table, type Column } from '@/components/ui';
 import { useCancelInvoice, useInvoice, useIssueInvoice, useMarkInvoicePaid } from './hooks';
-import { InvoiceStatusBadge, currency } from './statusBadge';
+import { InvoiceStatusBadge } from './statusBadge';
 import type { InvoiceItem } from '@/types';
 import { useState } from 'react';
 
@@ -36,8 +37,8 @@ export function InvoiceDetailPage() {
       ),
     },
     { key: 'qty', header: 'Qty', align: 'right', render: (item) => item.quantity },
-    { key: 'unitPrice', header: 'Unit price', align: 'right', render: (item) => currency(item.unitPrice) },
-    { key: 'lineTotal', header: 'Line total', align: 'right', render: (item) => currency(item.lineTotal) },
+    { key: 'unitPrice', header: 'Unit price', align: 'right', render: (item) => formatCurrency(item.unitPrice) },
+    { key: 'lineTotal', header: 'Line total', align: 'right', render: (item) => formatCurrency(item.lineTotal) },
   ];
 
   const runAction = async (action: () => Promise<unknown>) => {
@@ -63,7 +64,6 @@ export function InvoiceDetailPage() {
           </div>
         }
       />
-
       {actionError && (
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
           {actionError}
@@ -85,15 +85,15 @@ export function InvoiceDetailPage() {
               <dl className="flex flex-col gap-2 text-sm">
                 <div className="flex justify-between">
                   <dt className="text-graphite-500">Subtotal</dt>
-                  <dd className="font-medium text-graphite-800">{currency(invoice.subtotal)}</dd>
+                  <dd className="font-medium text-graphite-800">{formatCurrency(invoice.subtotal)}</dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-graphite-500">Tax</dt>
-                  <dd className="font-medium text-graphite-800">{currency(invoice.tax)}</dd>
+                  <dd className="font-medium text-graphite-800">{formatCurrency(invoice.tax)}</dd>
                 </div>
                 <div className="mt-1 flex justify-between border-t border-graphite-100 pt-2 text-base">
                   <dt className="font-semibold text-graphite-900">Total</dt>
-                  <dd className="font-semibold text-graphite-900">{currency(invoice.total)}</dd>
+                  <dd className="font-semibold text-graphite-900">{formatCurrency(invoice.total)}</dd>
                 </div>
               </dl>
               <p className="mt-4 text-xs text-graphite-400">

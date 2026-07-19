@@ -59,6 +59,11 @@ export async function createCategory(input: CategoryInput): Promise<Category> {
   return data;
 }
 
+export async function updateCategory(id: string, input: CategoryInput): Promise<Category> {
+  const { data } = await apiClient.patch<Category>(`/inventory/categories/${id}`, input);
+  return data;
+}
+
 export async function deleteCategory(id: string): Promise<void> {
   await apiClient.delete(`/inventory/categories/${id}`);
 }

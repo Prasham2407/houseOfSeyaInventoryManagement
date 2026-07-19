@@ -28,13 +28,13 @@ export function Modal({
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-graphite-900/50 p-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-graphite-900/50 p-0 sm:items-center sm:p-4">
       <div
         role="dialog"
         aria-modal="true"
-        className="w-full max-w-lg rounded-lg bg-white shadow-xl"
+        className="w-full max-w-lg rounded-t-lg bg-white shadow-xl sm:rounded-lg"
       >
-        <div className="flex items-center justify-between border-b border-graphite-100 px-5 py-4">
+        <div className="flex items-center justify-between border-b border-graphite-100 px-4 py-3 sm:px-5 sm:py-4">
           <h2 className="text-[15px] font-semibold text-graphite-900">{title}</h2>
           <button
             onClick={onClose}
@@ -44,8 +44,8 @@ export function Modal({
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="max-h-[70vh] overflow-y-auto px-5 py-4">{children}</div>
-        {footer && <div className="flex justify-end gap-2 border-t border-graphite-100 px-5 py-4">{footer}</div>}
+        <div className="max-h-[70vh] overflow-y-auto px-4 py-4 sm:px-5">{children}</div>
+        {footer && <div className="flex justify-end gap-2 border-t border-graphite-100 px-4 py-3 sm:px-5 sm:py-4">{footer}</div>}
       </div>
     </div>,
     document.body,

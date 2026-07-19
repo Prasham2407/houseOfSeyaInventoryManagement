@@ -2,8 +2,9 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { Button, Card, EmptyState, FullPageSpinner, Input, PageHeader, Select, Table, type Column } from '@/components/ui';
+import { formatCurrency } from '@/lib/format';
 import { useInvoices } from './hooks';
-import { InvoiceStatusBadge, currency } from './statusBadge';
+import { InvoiceStatusBadge } from './statusBadge';
 import type { Invoice, InvoiceStatus } from '@/types';
 
 export function InvoicesListPage() {
@@ -31,7 +32,7 @@ export function InvoicesListPage() {
     },
     { key: 'customer', header: 'Customer', render: (inv) => inv.customerName },
     { key: 'status', header: 'Status', render: (inv) => <InvoiceStatusBadge status={inv.status} /> },
-    { key: 'total', header: 'Total', align: 'right', render: (inv) => currency(inv.total) },
+    { key: 'total', header: 'Total', align: 'right', render: (inv) => formatCurrency(inv.total) },
     {
       key: 'date',
       header: 'Created',
@@ -49,12 +50,12 @@ export function InvoicesListPage() {
         action={<Button onClick={() => navigate('/invoices/new')} icon={<Plus className="h-4 w-4" strokeWidth={2} />}>New invoice</Button>}
       />
 
-      <div className="mb-4 flex flex-wrap gap-3">
-        <div className="max-w-xs flex-1">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+        <div className="w-full max-w-xs flex-1 sm:w-auto">
           <Input placeholder="Search by invoice # or customer" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <Select
-          className="max-w-[160px]"
+          className="w-full sm:w-auto sm:max-w-[160px]"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as InvoiceStatus | 'ALL')}
         >

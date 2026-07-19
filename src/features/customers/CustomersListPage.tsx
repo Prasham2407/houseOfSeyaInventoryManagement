@@ -95,7 +95,7 @@ export function CustomersListPage() {
         action={<Button onClick={openCreate} icon={<Plus className="h-4 w-4" strokeWidth={2} />}>Add customer</Button>}
       />
 
-      <div className="mb-4 max-w-xs">
+      <div className="mb-4 w-full max-w-xs">
         <Input placeholder="Search by name or email" value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
