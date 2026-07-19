@@ -39,15 +39,15 @@ export function Table<T>({
   }
 
   return (
-    <div className="-mx-4 overflow-x-auto sm:mx-0">
-      <table className="w-full border-collapse text-sm">
+    <div className="overflow-x-auto">
+      <table className="min-w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-graphite-200 bg-graphite-50/60">
             {columns.map((col) => (
               <th
                 key={col.key}
                 className={cn(
-                  'whitespace-nowrap px-3 py-2.5 text-[12px] font-semibold uppercase tracking-wide text-graphite-500 sm:px-4',
+                  'whitespace-nowrap px-4 py-2.5 text-[12px] font-semibold uppercase tracking-wide text-graphite-500',
                   alignClass[col.align ?? 'left'],
                   col.className,
                 )}
@@ -70,7 +70,7 @@ export function Table<T>({
               {columns.map((col) => (
                 <td
                   key={col.key}
-                  className={cn('px-3 py-3 text-graphite-700 sm:px-4', alignClass[col.align ?? 'left'], col.className)}
+                  className={cn('px-4 py-3 text-graphite-700', alignClass[col.align ?? 'left'], col.className)}
                 >
                   {col.render(row)}
                 </td>
