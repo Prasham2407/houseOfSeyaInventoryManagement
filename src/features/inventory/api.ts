@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/apiClient';
-import type { Category, Product, StockMovement } from '@/types';
+import type { Category, PaginatedResult, Product, SortDir, StockMovement } from '@/types';
 
 export interface ProductInput {
   sku: string;
@@ -15,8 +15,32 @@ export interface CategoryInput {
   name: string;
 }
 
+export type StockFilter = 'all' | 'low';
+
+export interface FetchProductsPageParams {
+  page: number;
+  pageSize: number;
+  search?: string;
+  sortBy?: string;
+  sortDir?: SortDir;
+  stockFilter?: StockFilter;
+}
+
+export interface FetchCategoriesPageParams {
+  page: number;
+  pageSize: number;
+  search?: string;
+  sortBy?: string;
+  sortDir?: SortDir;
+}
+
 export async function fetchProducts(): Promise<Product[]> {
   const { data } = await apiClient.get<Product[]>('/inventory/products');
+  return data;
+}
+
+export async function fetchProductsPage(params: FetchProductsPageParams): Promise<PaginatedResult<Product>> {
+  const { data } = await apiClient.get<PaginatedResult<Product>>('/inventory/products', { params });
   return data;
 }
 
@@ -51,6 +75,11 @@ export async function fetchStockMovements(productId: string): Promise<StockMovem
 
 export async function fetchCategories(): Promise<Category[]> {
   const { data } = await apiClient.get<Category[]>('/inventory/categories');
+  return data;
+}
+
+export async function fetchCategoriesPage(params: FetchCategoriesPageParams): Promise<PaginatedResult<Category>> {
+  const { data } = await apiClient.get<PaginatedResult<Category>>('/inventory/categories', { params });
   return data;
 }
 

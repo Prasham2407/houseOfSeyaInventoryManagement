@@ -18,20 +18,30 @@ const toneClasses: Record<Tone, string> = {
 
 export function IconButton({ tone = 'neutral', label, className, children, ...rest }: IconButtonProps) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      className={cn(
-        'inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-md transition-colors',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-graphite-400',
-        'disabled:cursor-not-allowed disabled:opacity-40',
-        toneClasses[tone],
-        className,
-      )}
-      {...rest}
-    >
-      {children}
-    </button>
+    <span className="group/tooltip relative inline-flex">
+      <button
+        type="button"
+        aria-label={label}
+        className={cn(
+          'inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-md transition-colors',
+          'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-graphite-400',
+          'disabled:cursor-not-allowed disabled:opacity-40',
+          toneClasses[tone],
+          className,
+        )}
+        {...rest}
+      >
+        {children}
+      </button>
+      <span
+        role="tooltip"
+        className={cn(
+          'pointer-events-none absolute bottom-full left-1/2 z-20 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-graphite-900 px-2 py-1 text-[11px] font-medium text-white opacity-0 shadow-sm transition-opacity delay-300 duration-100',
+          'group-hover/tooltip:opacity-100 group-focus-within/tooltip:opacity-100',
+        )}
+      >
+        {label}
+      </span>
+    </span>
   );
 }

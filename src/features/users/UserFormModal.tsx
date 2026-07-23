@@ -1,0 +1,87 @@
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { useEffect, useState } from 'react';
+import { Button, Input, Modal, Select } from '@/components/ui';
+import { extractErrorMessage } from '@/lib/apiClient';
+import { useCreateUser } from './hooks';
+
+const schema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().email('Enter a valid email'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  role: z.enum(['ADMIN', 'STAFF']),
+});
+
+type FormValues = z.infer<typeof schema>;
+
+export function UserFormModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const createUser = useCreateUser();
+  const [serverError, setServerError] = useState<string | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { role: 'STAFF' } });
+
+  useEffect(() => {
+    if (isOpen) {
+      reset({ name: '', email: '', password: '', role: 'STAFF' });
+      setServerError(null);
+    }
+  }, [isOpen, reset]);
+
+  const onSubmit = async (values: FormValues) => {
+    setServerError(null);
+    try {
+      await createUser.mutateAsync(values);
+      onClose();
+    } catch (err) {
+      setServerError(extractErrorMessage(err, 'Could not create user.'));
+    }
+  };
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Add user"
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose} type="button">
+            Cancel
+          </Button>
+          <Button type="submit" form="user-form" isLoading={isSubmitting}>
+            Add user
+          </Button>
+        </>
+      }
+    >
+      <form id="user-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+        <Input label="Name" placeholder="Full name" error={errors.name?.message} {...register('name')} />
+        <Input
+          label="Email"
+          type="email"
+          placeholder="name@houseofseya.com"
+          error={errors.email?.message}
+          {...register('email')}
+        />
+        <Input
+          label="Temporary password"
+          type="password"
+          placeholder="••••••••"
+          hint="The user can change this later."
+          error={errors.password?.message}
+          {...register('password')}
+        />
+        <Select label="Role" error={errors.role?.message} {...register('role')}>
+          <option value="STAFF">Staff</option>
+          <option value="ADMIN">Admin</option>
+        </Select>
+        {serverError && <p className="text-sm text-red-600">{serverError}</p>}
+      </form>
+    </Modal>
+  );
+}

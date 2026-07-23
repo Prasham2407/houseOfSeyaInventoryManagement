@@ -5,14 +5,24 @@ export const productKeys = {
   all: ['products'] as const,
   detail: (id: string) => ['products', id] as const,
   movements: (id: string) => ['products', id, 'movements'] as const,
+  page: (params: api.FetchProductsPageParams) => ['products', 'page', params] as const,
 };
 
 export const categoryKeys = {
   all: ['categories'] as const,
+  page: (params: api.FetchCategoriesPageParams) => ['categories', 'page', params] as const,
 };
 
 export function useProducts() {
   return useQuery({ queryKey: productKeys.all, queryFn: api.fetchProducts });
+}
+
+export function useProductsPage(params: api.FetchProductsPageParams) {
+  return useQuery({
+    queryKey: productKeys.page(params),
+    queryFn: () => api.fetchProductsPage(params),
+    placeholderData: (previousData) => previousData,
+  });
 }
 
 export function useProduct(id: string | undefined) {
@@ -78,6 +88,14 @@ export function useRestockProduct() {
 
 export function useCategories() {
   return useQuery({ queryKey: categoryKeys.all, queryFn: api.fetchCategories });
+}
+
+export function useCategoriesPage(params: api.FetchCategoriesPageParams) {
+  return useQuery({
+    queryKey: categoryKeys.page(params),
+    queryFn: () => api.fetchCategoriesPage(params),
+    placeholderData: (previousData) => previousData,
+  });
 }
 
 export function useCreateCategory() {

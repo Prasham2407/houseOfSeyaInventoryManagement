@@ -1,27 +1,44 @@
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Plus, Trash2 } from 'lucide-react';
 import { extractErrorMessage } from '@/lib/apiClient';
 import { formatCurrency } from '@/lib/format';
-import { Button, Card, CardBody, CardHeader, EmptyState, IconButton, Input, PageHeader, Select } from '@/components/ui';
+import { Button, Card, CardBody, CardHeader, EmptyState, FullPageSpinner, IconButton, Input, PageHeader, Select } from '@/components/ui';
 import { useCustomers } from '@/features/customers/hooks';
 import { useProducts } from '@/features/inventory/hooks';
-import { useCreateInvoice } from './hooks';
+import { useCreateSale, useSale, useUpdateSale } from './hooks';
 
 interface DraftLine {
   productId: string;
   quantity: number;
 }
 
-export function InvoiceFormPage() {
+export function SaleFormPage() {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const isEdit = !!id;
+
   const { data: customers } = useCustomers();
   const { data: products } = useProducts();
-  const createInvoice = useCreateInvoice();
+  const { data: existingSale, isLoading: isLoadingSale, isError: isSaleError, error: saleFetchError } = useSale(id);
+  const createSale = useCreateSale();
+  const updateSale = useUpdateSale();
 
   const [customerId, setCustomerId] = useState('');
   const [lines, setLines] = useState<DraftLine[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
+
+  useEffect(() => {
+    if (!isEdit || !existingSale || initialized) return;
+    if (existingSale.status !== 'DRAFT') {
+      setError('Only draft sales can be edited.');
+      return;
+    }
+    setCustomerId(existingSale.customerId);
+    setLines(existingSale.items.map((item) => ({ productId: item.productId, quantity: item.quantity })));
+    setInitialized(true);
+  }, [isEdit, existingSale, initialized]);
 
   const availableProducts = useMemo(
     () => products?.filter((p) => !lines.some((l) => l.productId === p.id)) ?? [],
@@ -43,6 +60,16 @@ export function InvoiceFormPage() {
 
   const productById = useMemo(() => new Map(products?.map((p) => [p.id, p])), [products]);
 
+  const getLineQuantityError = (line: DraftLine): string | null => {
+    const product = productById.get(line.productId);
+    if (!product) return null;
+    if (!line.quantity || line.quantity < 1) return 'Enter a quantity of at least 1.';
+    if (line.quantity > product.quantityInStock) {
+      return `Only ${product.quantityInStock} in stock.`;
+    }
+    return null;
+  };
+
   const subtotal = lines.reduce((sum, l) => {
     const product = productById.get(l.productId);
     return sum + (product ? product.unitPrice * l.quantity : 0);
@@ -60,27 +87,41 @@ export function InvoiceFormPage() {
       setError('Add at least one product line.');
       return;
     }
-    for (const line of lines) {
-      const product = productById.get(line.productId);
-      if (product && line.quantity > product.quantityInStock) {
-        setError(`Only ${product.quantityInStock} units of "${product.name}" are in stock.`);
-        return;
-      }
+    if (lines.some((line) => getLineQuantityError(line) !== null)) {
+      setError('Fix the highlighted quantities before saving.');
+      return;
     }
+    const input = {
+      customerId,
+      items: lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
+    };
+
     try {
-      const invoice = await createInvoice.mutateAsync({
-        customerId,
-        items: lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
-      });
-      navigate(`/invoices/${invoice.id}`);
+      const sale = isEdit
+        ? await updateSale.mutateAsync({ id: id as string, input })
+        : await createSale.mutateAsync(input);
+      navigate(`/sales/${sale.id}`, { replace: true });
     } catch (err) {
-      setError(extractErrorMessage(err, 'Could not create invoice.'));
+      setError(extractErrorMessage(err, isEdit ? 'Could not update sale.' : 'Could not create sale.'));
     }
   };
 
+  if (isEdit && isLoadingSale) return <FullPageSpinner />;
+
+  if (isEdit && isSaleError) {
+    return (
+      <div className="py-16 text-center text-sm text-red-600">
+        {extractErrorMessage(saleFetchError, 'Could not load this sale.')}
+      </div>
+    );
+  }
+
   return (
     <div>
-      <PageHeader title="New invoice" description="Select a customer and add the products being billed." />
+      <PageHeader
+        title={isEdit ? 'Edit sale' : 'Add sale'}
+        description="Select a customer and add the products being sold."
+      />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
@@ -115,7 +156,7 @@ export function InvoiceFormPage() {
             />
             <CardBody>
               {lines.length === 0 ? (
-                <EmptyState title="No products added" description="Use “Add product” to start building this invoice." />
+                <EmptyState title="No products added" description="Use “Add product” to start building this sale." />
               ) : (
                 <div className="flex flex-col gap-3">
                   {lines.map((line, index) => {
@@ -144,6 +185,7 @@ export function InvoiceFormPage() {
                             max={product?.quantityInStock}
                             value={line.quantity}
                             onChange={(e) => updateLine(index, { quantity: Number(e.target.value) })}
+                            error={getLineQuantityError(line) ?? undefined}
                           />
                         </div>
                         <div className="flex items-end justify-between gap-2 sm:col-span-2 sm:block sm:text-right sm:text-sm sm:text-graphite-500">
@@ -189,11 +231,16 @@ export function InvoiceFormPage() {
 
               {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
 
-              <Button className="mt-6 w-full" onClick={handleSubmit} isLoading={createInvoice.isPending}>
-                Create draft invoice
+              <Button
+                className="mt-6 w-full"
+                onClick={handleSubmit}
+                isLoading={isEdit ? updateSale.isPending : createSale.isPending}
+                disabled={lines.length === 0 || lines.some((line) => getLineQuantityError(line) !== null)}
+              >
+                {isEdit ? 'Save changes' : 'Save draft sale'}
               </Button>
               <p className="mt-2 text-center text-xs text-graphite-400">
-                Stock is only deducted once the invoice is issued.
+                Stock is only deducted once the sale is issued as an invoice.
               </p>
             </CardBody>
           </Card>

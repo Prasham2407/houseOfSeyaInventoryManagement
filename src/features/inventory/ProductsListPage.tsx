@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { PackagePlus, Pencil, Plus, Trash2 } from 'lucide-react';
 import {
   Badge,
@@ -10,32 +10,42 @@ import {
   IconButton,
   Input,
   PageHeader,
+  Pagination,
+  Select,
   Table,
   type Column,
 } from '@/components/ui';
-import { useDeleteProduct, useProducts } from './hooks';
+import { useTableQuery } from '@/lib/useTableQuery';
+import type { StockFilter } from './api';
+import { useDeleteProduct, useProductsPage } from './hooks';
 import { ProductFormModal } from './ProductFormModal';
 import { RestockModal } from './RestockModal';
 import { formatCurrency } from '@/lib/format';
 import type { Product } from '@/types';
 
 export function ProductsListPage() {
-  const { data: products, isLoading } = useProducts();
+  const query = useTableQuery({ defaultSortBy: 'createdAt' });
+  const [stockFilter, setStockFilter] = useState<StockFilter>('all');
+  const { data, isLoading, isPlaceholderData } = useProductsPage({
+    page: query.page,
+    pageSize: query.pageSize,
+    search: query.search,
+    sortBy: query.sortBy,
+    sortDir: query.sortDir,
+    stockFilter,
+  });
   const deleteProduct = useDeleteProduct();
-  const [search, setSearch] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [restockTarget, setRestockTarget] = useState<Product | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
 
-  const filtered = useMemo(() => {
-    if (!products) return [];
-    const q = search.trim().toLowerCase();
-    if (!q) return products;
-    return products.filter(
-      (p) => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q),
-    );
-  }, [products, search]);
+  const products = data?.data ?? [];
+
+  const handleStockFilterChange = (value: StockFilter) => {
+    setStockFilter(value);
+    query.setPage(1);
+  };
 
   const openCreate = () => {
     setEditingProduct(null);
@@ -51,6 +61,7 @@ export function ProductsListPage() {
     {
       key: 'name',
       header: 'Product',
+      sortField: 'name',
       render: (p) => (
         <div>
           <p className="font-medium text-graphite-900">{p.name}</p>
@@ -58,12 +69,24 @@ export function ProductsListPage() {
         </div>
       ),
     },
-    { key: 'category', header: 'Category', render: (p) => p.categoryName ?? <span className="text-graphite-300">—</span> },
-    { key: 'price', header: 'Unit price', align: 'right', render: (p) => formatCurrency(p.unitPrice) },
+    {
+      key: 'category',
+      header: 'Category',
+      sortField: 'category',
+      render: (p) => p.categoryName ?? <span className="text-graphite-300">—</span>,
+    },
+    {
+      key: 'price',
+      header: 'Unit price',
+      align: 'right',
+      sortField: 'unitPrice',
+      render: (p) => formatCurrency(p.unitPrice),
+    },
     {
       key: 'stock',
       header: 'Stock',
       align: 'right',
+      sortField: 'quantityInStock',
       render: (p) => {
         const isLow = p.quantityInStock <= p.reorderLevel;
         return (
@@ -125,19 +148,52 @@ export function ProductsListPage() {
         action={<Button onClick={openCreate} icon={<Plus className="h-4 w-4" strokeWidth={2} />}>Add product</Button>}
       />
 
-      <div className="mb-4 w-full max-w-xs">
-        <Input placeholder="Search by name or SKU" value={search} onChange={(e) => setSearch(e.target.value)} />
+      <div className="mb-4 flex flex-wrap items-end gap-3">
+        <div className="w-full max-w-xs">
+          <Input
+            placeholder="Search by product or category"
+            value={query.searchInput}
+            onChange={(e) => query.setSearchInput(e.target.value)}
+            onKeyDown={query.handleSearchKeyDown}
+          />
+        </div>
+        <div className="w-full max-w-[10rem]">
+          <Select
+            aria-label="Stock filter"
+            value={stockFilter}
+            onChange={(e) => handleStockFilterChange(e.target.value as StockFilter)}
+          >
+            <option value="all">All stock</option>
+            <option value="low">Low stock</option>
+          </Select>
+        </div>
       </div>
 
-      <Card>
-        {filtered.length === 0 ? (
+      <Card className={isPlaceholderData ? 'opacity-60 transition-opacity' : undefined}>
+        {products.length === 0 ? (
           <EmptyState
             title="No products yet"
             description="Add your first product to start tracking inventory."
             action={<Button onClick={openCreate} icon={<Plus className="h-4 w-4" strokeWidth={2} />}>Add product</Button>}
           />
         ) : (
-          <Table columns={columns} rows={filtered} getRowKey={(p) => p.id} />
+          <>
+            <Table
+              columns={columns}
+              rows={products}
+              getRowKey={(p) => p.id}
+              sortBy={query.sortBy}
+              sortDir={query.sortDir}
+              onSortChange={query.toggleSort}
+            />
+            <Pagination
+              page={data?.page ?? query.page}
+              pageSize={data?.pageSize ?? query.pageSize}
+              total={data?.total ?? 0}
+              onPageChange={query.setPage}
+              onPageSizeChange={query.setPageSize}
+            />
+          </>
         )}
       </Card>
 

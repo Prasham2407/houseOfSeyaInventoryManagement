@@ -12,3 +12,4 @@ export { Modal } from './Modal';
 export { ConfirmModal } from './ConfirmModal';
 export { IconButton } from './IconButton';
 export { PageHeader } from './PageHeader';
+export { Pagination } from './Pagination';

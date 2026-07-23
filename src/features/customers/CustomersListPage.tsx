@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import {
   Badge,
@@ -10,29 +10,30 @@ import {
   IconButton,
   Input,
   PageHeader,
+  Pagination,
   Table,
   type Column,
 } from '@/components/ui';
-import { useCustomers, useDeleteCustomer } from './hooks';
+import { useTableQuery } from '@/lib/useTableQuery';
+import { useCustomersPage, useDeleteCustomer } from './hooks';
 import { CustomerFormModal } from './CustomerFormModal';
 import type { Customer } from '@/types';
 
 export function CustomersListPage() {
-  const { data: customers, isLoading } = useCustomers();
+  const query = useTableQuery({ defaultSortBy: 'createdAt' });
+  const { data, isLoading, isPlaceholderData } = useCustomersPage({
+    page: query.page,
+    pageSize: query.pageSize,
+    search: query.search,
+    sortBy: query.sortBy,
+    sortDir: query.sortDir,
+  });
   const deleteCustomer = useDeleteCustomer();
-  const [search, setSearch] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null);
 
-  const filtered = useMemo(() => {
-    if (!customers) return [];
-    const q = search.trim().toLowerCase();
-    if (!q) return customers;
-    return customers.filter(
-      (c) => c.name.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q),
-    );
-  }, [customers, search]);
+  const customers = data?.data ?? [];
 
   const openCreate = () => {
     setEditingCustomer(null);
@@ -45,14 +46,20 @@ export function CustomersListPage() {
   };
 
   const columns: Column<Customer>[] = [
-    { key: 'name', header: 'Name', render: (c) => <span className="font-medium text-graphite-900">{c.name}</span> },
-    { key: 'email', header: 'Email', render: (c) => c.email ?? <span className="text-graphite-300">—</span> },
-    { key: 'phone', header: 'Phone', render: (c) => c.phone ?? <span className="text-graphite-300">—</span> },
     {
-      key: 'invoices',
-      header: 'Invoices',
+      key: 'name',
+      header: 'Name',
+      sortField: 'name',
+      render: (c) => <span className="font-medium text-graphite-900">{c.name}</span>,
+    },
+    { key: 'email', header: 'Email', sortField: 'email', render: (c) => c.email ?? <span className="text-graphite-300">—</span> },
+    { key: 'phone', header: 'Phone', sortField: 'phone', render: (c) => c.phone ?? <span className="text-graphite-300">—</span> },
+    {
+      key: 'sales',
+      header: 'Sales',
       align: 'right',
-      render: (c) => <Badge tone={c.totalInvoices > 0 ? 'info' : 'neutral'}>{c.totalInvoices}</Badge>,
+      sortField: 'totalSales',
+      render: (c) => <Badge tone={c.totalSales > 0 ? 'info' : 'neutral'}>{c.totalSales}</Badge>,
     },
     {
       key: 'actions',
@@ -91,23 +98,44 @@ export function CustomersListPage() {
     <div>
       <PageHeader
         title="Customers"
-        description="Manage the companies and contacts you invoice."
+        description="Manage the companies and contacts you sell to."
         action={<Button onClick={openCreate} icon={<Plus className="h-4 w-4" strokeWidth={2} />}>Add customer</Button>}
       />
 
       <div className="mb-4 w-full max-w-xs">
-        <Input placeholder="Search by name or email" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <Input
+          placeholder="Search by name, email or phone"
+          value={query.searchInput}
+          onChange={(e) => query.setSearchInput(e.target.value)}
+          onKeyDown={query.handleSearchKeyDown}
+        />
       </div>
 
-      <Card>
-        {filtered.length === 0 ? (
+      <Card className={isPlaceholderData ? 'opacity-60 transition-opacity' : undefined}>
+        {customers.length === 0 ? (
           <EmptyState
             title="No customers yet"
-            description="Add your first customer to start creating invoices for them."
+            description="Add your first customer to start recording sales for them."
             action={<Button onClick={openCreate} icon={<Plus className="h-4 w-4" strokeWidth={2} />}>Add customer</Button>}
           />
         ) : (
-          <Table columns={columns} rows={filtered} getRowKey={(c) => c.id} />
+          <>
+            <Table
+              columns={columns}
+              rows={customers}
+              getRowKey={(c) => c.id}
+              sortBy={query.sortBy}
+              sortDir={query.sortDir}
+              onSortChange={query.toggleSort}
+            />
+            <Pagination
+              page={data?.page ?? query.page}
+              pageSize={data?.pageSize ?? query.pageSize}
+              total={data?.total ?? 0}
+              onPageChange={query.setPage}
+              onPageSizeChange={query.setPageSize}
+            />
+          </>
         )}
       </Card>
 

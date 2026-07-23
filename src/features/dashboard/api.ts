@@ -1,30 +1,30 @@
 import { fetchCustomers } from '@/features/customers/api';
 import { fetchProducts } from '@/features/inventory/api';
-import { fetchInvoices } from '@/features/invoices/api';
+import { fetchSales } from '@/features/sales/api';
 import type { DashboardSummary } from '@/types';
 
 export async function fetchDashboardSummary(): Promise<DashboardSummary> {
-  const [customers, products, invoices] = await Promise.all([
+  const [customers, products, sales] = await Promise.all([
     fetchCustomers(),
     fetchProducts(),
-    fetchInvoices(),
+    fetchSales(),
   ]);
 
   const now = new Date();
-  const invoicesThisMonth = invoices.filter((inv) => {
-    const created = new Date(inv.createdAt);
+  const salesThisMonth = sales.filter((sale) => {
+    const created = new Date(sale.createdAt);
     return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
   });
 
-  const revenueThisMonth = invoicesThisMonth
-    .filter((inv) => inv.status === 'PAID' || inv.status === 'ISSUED')
-    .reduce((sum, inv) => sum + inv.total, 0);
+  const revenueThisMonth = salesThisMonth
+    .filter((sale) => sale.status === 'PAID' || sale.status === 'ISSUED')
+    .reduce((sum, sale) => sum + sale.total, 0);
 
   const lowStockProducts = products
     .filter((p) => p.quantityInStock <= p.reorderLevel)
     .sort((a, b) => a.quantityInStock - b.quantityInStock);
 
-  const recentInvoices = [...invoices]
+  const recentSales = [...sales]
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .slice(0, 5);
 
@@ -32,9 +32,9 @@ export async function fetchDashboardSummary(): Promise<DashboardSummary> {
     totalProducts: products.length,
     lowStockCount: lowStockProducts.length,
     totalCustomers: customers.length,
-    invoicesThisMonth: invoicesThisMonth.length,
+    salesThisMonth: salesThisMonth.length,
     revenueThisMonth,
-    recentInvoices,
+    recentSales,
     lowStockProducts: lowStockProducts.slice(0, 5),
   };
 

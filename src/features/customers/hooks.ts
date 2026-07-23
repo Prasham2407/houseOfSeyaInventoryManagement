@@ -4,10 +4,19 @@ import * as api from './api';
 export const customerKeys = {
   all: ['customers'] as const,
   detail: (id: string) => ['customers', id] as const,
+  page: (params: api.FetchCustomersPageParams) => ['customers', 'page', params] as const,
 };
 
 export function useCustomers() {
   return useQuery({ queryKey: customerKeys.all, queryFn: api.fetchCustomers });
+}
+
+export function useCustomersPage(params: api.FetchCustomersPageParams) {
+  return useQuery({
+    queryKey: customerKeys.page(params),
+    queryFn: () => api.fetchCustomersPage(params),
+    placeholderData: (previousData) => previousData,
+  });
 }
 
 export function useCustomer(id: string | undefined) {

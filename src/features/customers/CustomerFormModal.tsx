@@ -2,14 +2,16 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useEffect } from 'react';
-import { Button, Input, Modal } from '@/components/ui';
+import { Button, Input, Modal, Select } from '@/components/ui';
+import { COUNTRY_CODES, DEFAULT_COUNTRY_DIAL_CODE, joinPhoneNumber, splitPhoneNumber } from '@/lib/countryCodes';
 import { useCreateCustomer, useUpdateCustomer } from './hooks';
 import type { Customer } from '@/types';
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Enter a valid email').optional().or(z.literal('')),
-  phone: z.string().optional(),
+  phoneDialCode: z.string(),
+  phoneNumber: z.string().optional(),
   address: z.string().optional(),
 });
 
@@ -37,20 +39,28 @@ export function CustomerFormModal({
 
   useEffect(() => {
     if (isOpen) {
+      const { dialCode, number } = splitPhoneNumber(customer?.phone);
       reset({
         name: customer?.name ?? '',
         email: customer?.email ?? '',
-        phone: customer?.phone ?? '',
+        phoneDialCode: dialCode || DEFAULT_COUNTRY_DIAL_CODE,
+        phoneNumber: number,
         address: customer?.address ?? '',
       });
     }
   }, [isOpen, customer, reset]);
 
   const onSubmit = async (values: FormValues) => {
+    const input = {
+      name: values.name,
+      email: values.email,
+      phone: joinPhoneNumber(values.phoneDialCode, values.phoneNumber ?? ''),
+      address: values.address,
+    };
     if (isEditing && customer) {
-      await updateCustomer.mutateAsync({ id: customer.id, input: values });
+      await updateCustomer.mutateAsync({ id: customer.id, input });
     } else {
-      await createCustomer.mutateAsync(values);
+      await createCustomer.mutateAsync(input);
     }
     onClose();
   };
@@ -74,7 +84,25 @@ export function CustomerFormModal({
       <form id="customer-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         <Input label="Name" placeholder="Company or contact name" error={errors.name?.message} {...register('name')} />
         <Input label="Email" type="email" placeholder="name@company.com" error={errors.email?.message} {...register('email')} />
-        <Input label="Phone" placeholder="+1 555 123 4567" error={errors.phone?.message} {...register('phone')} />
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[13px] font-medium text-graphite-700">Phone</label>
+          <div className="flex gap-2">
+            <Select className="w-28 shrink-0" aria-label="Country code" {...register('phoneDialCode')}>
+              {COUNTRY_CODES.map((country) => (
+                <option key={country.code} value={country.dialCode}>
+                  {country.dialCode} {country.code}
+                </option>
+              ))}
+            </Select>
+            <div className="flex-1">
+              <Input
+                placeholder="98765 43210"
+                error={errors.phoneNumber?.message}
+                {...register('phoneNumber')}
+              />
+            </div>
+          </div>
+        </div>
         <Input label="Address" placeholder="Street, city, country" error={errors.address?.message} {...register('address')} />
       </form>
     </Modal>

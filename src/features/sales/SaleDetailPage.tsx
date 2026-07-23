@@ -1,31 +1,34 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useState } from 'react';
+import { FileText, Pencil } from 'lucide-react';
 import { extractErrorMessage } from '@/lib/apiClient';
 import { formatCurrency } from '@/lib/format';
 import { Button, Card, CardBody, CardHeader, FullPageSpinner, PageHeader, Table, type Column } from '@/components/ui';
-import { useCancelInvoice, useInvoice, useIssueInvoice, useMarkInvoicePaid } from './hooks';
-import { InvoiceStatusBadge } from './statusBadge';
-import type { InvoiceItem } from '@/types';
-import { useState } from 'react';
+import { useCancelSale, useSale, useIssueSale, useMarkSalePaid } from './hooks';
+import { SaleStatusBadge } from './statusBadge';
+import { InvoicePdfModal } from './InvoicePdfModal';
+import type { SaleItem } from '@/types';
 
-export function InvoiceDetailPage() {
+export function SaleDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: invoice, isLoading } = useInvoice(id);
-  const issueInvoice = useIssueInvoice();
-  const markPaid = useMarkInvoicePaid();
-  const cancelInvoice = useCancelInvoice();
+  const { data: sale, isLoading } = useSale(id);
+  const issueSale = useIssueSale();
+  const markPaid = useMarkSalePaid();
+  const cancelSale = useCancelSale();
   const [actionError, setActionError] = useState<string | null>(null);
+  const [pdfOpen, setPdfOpen] = useState(false);
 
   if (isLoading) return <FullPageSpinner />;
-  if (!invoice) {
+  if (!sale) {
     return (
       <div className="py-16 text-center text-sm text-graphite-400">
-        Invoice not found. <Link to="/invoices" className="text-brand-600 hover:underline">Back to invoices</Link>
+        Sale not found. <Link to="/sales" className="text-brand-600 hover:underline">Back to sales</Link>
       </div>
     );
   }
 
-  const columns: Column<InvoiceItem>[] = [
+  const columns: Column<SaleItem>[] = [
     {
       key: 'product',
       header: 'Product',
@@ -53,12 +56,12 @@ export function InvoiceDetailPage() {
   return (
     <div>
       <PageHeader
-        title={invoice.invoiceNumber}
-        description={`Billed to ${invoice.customerName}`}
+        title={sale.saleNumber}
+        description={`Billed to ${sale.customerName}`}
         action={
           <div className="flex items-center gap-3">
-            <InvoiceStatusBadge status={invoice.status} />
-            <Button variant="secondary" size="sm" onClick={() => navigate('/invoices')}>
+            <SaleStatusBadge status={sale.status} />
+            <Button variant="secondary" size="sm" onClick={() => navigate('/sales')}>
               Back
             </Button>
           </div>
@@ -74,7 +77,7 @@ export function InvoiceDetailPage() {
         <div className="lg:col-span-2">
           <Card>
             <CardHeader title="Line items" />
-            <Table columns={columns} rows={invoice.items} getRowKey={(item) => item.id} />
+            <Table columns={columns} rows={sale.items} getRowKey={(item) => item.id} />
           </Card>
         </div>
 
@@ -85,20 +88,20 @@ export function InvoiceDetailPage() {
               <dl className="flex flex-col gap-2 text-sm">
                 <div className="flex justify-between">
                   <dt className="text-graphite-500">Subtotal</dt>
-                  <dd className="font-medium text-graphite-800">{formatCurrency(invoice.subtotal)}</dd>
+                  <dd className="font-medium text-graphite-800">{formatCurrency(sale.subtotal)}</dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-graphite-500">Tax</dt>
-                  <dd className="font-medium text-graphite-800">{formatCurrency(invoice.tax)}</dd>
+                  <dd className="font-medium text-graphite-800">{formatCurrency(sale.tax)}</dd>
                 </div>
                 <div className="mt-1 flex justify-between border-t border-graphite-100 pt-2 text-base">
                   <dt className="font-semibold text-graphite-900">Total</dt>
-                  <dd className="font-semibold text-graphite-900">{formatCurrency(invoice.total)}</dd>
+                  <dd className="font-semibold text-graphite-900">{formatCurrency(sale.total)}</dd>
                 </div>
               </dl>
               <p className="mt-4 text-xs text-graphite-400">
-                Created {new Date(invoice.createdAt).toLocaleString()}
-                {invoice.issuedAt && <> · Issued {new Date(invoice.issuedAt).toLocaleString()}</>}
+                Created {new Date(sale.createdAt).toLocaleString()}
+                {sale.issuedAt && <> · Issued {new Date(sale.issuedAt).toLocaleString()}</>}
               </p>
             </CardBody>
           </Card>
@@ -106,38 +109,60 @@ export function InvoiceDetailPage() {
           <Card>
             <CardHeader title="Actions" />
             <CardBody className="flex flex-col gap-2">
-              {invoice.status === 'DRAFT' && (
+              {sale.status === 'DRAFT' && (
                 <Button
-                  isLoading={issueInvoice.isPending}
-                  onClick={() => runAction(() => issueInvoice.mutateAsync(invoice.id))}
+                  variant="secondary"
+                  onClick={() => navigate(`/sales/${sale.id}/edit`)}
+                  icon={<Pencil className="h-4 w-4" strokeWidth={2} />}
+                >
+                  Edit sale
+                </Button>
+              )}
+              {sale.status === 'DRAFT' && (
+                <Button
+                  isLoading={issueSale.isPending}
+                  onClick={() => runAction(() => issueSale.mutateAsync(sale.id))}
                 >
                   Issue invoice
                 </Button>
               )}
-              {invoice.status === 'ISSUED' && (
+              {sale.status === 'ISSUED' && (
                 <Button
                   isLoading={markPaid.isPending}
-                  onClick={() => runAction(() => markPaid.mutateAsync(invoice.id))}
+                  onClick={() => runAction(() => markPaid.mutateAsync(sale.id))}
                 >
                   Mark as paid
                 </Button>
               )}
-              {(invoice.status === 'DRAFT' || invoice.status === 'ISSUED') && (
+              {(sale.status === 'DRAFT' || sale.status === 'ISSUED') && (
                 <Button
                   variant="danger"
-                  isLoading={cancelInvoice.isPending}
-                  onClick={() => runAction(() => cancelInvoice.mutateAsync(invoice.id))}
+                  isLoading={cancelSale.isPending}
+                  onClick={() => runAction(() => cancelSale.mutateAsync(sale.id))}
                 >
-                  Cancel invoice
+                  Cancel sale
                 </Button>
               )}
-              {(invoice.status === 'PAID' || invoice.status === 'CANCELLED') && (
+              {(sale.status === 'PAID' || sale.status === 'CANCELLED') && (
                 <p className="text-sm text-graphite-400">No further actions available.</p>
+              )}
+              {sale.status !== 'DRAFT' && (
+                <Button
+                  variant="secondary"
+                  onClick={() => setPdfOpen(true)}
+                  icon={<FileText className="h-4 w-4" strokeWidth={2} />}
+                >
+                  View / download invoice
+                </Button>
               )}
             </CardBody>
           </Card>
         </div>
       </div>
+
+      {pdfOpen && (
+        <InvoicePdfModal saleId={sale.id} saleNumber={sale.saleNumber} onClose={() => setPdfOpen(false)} />
+      )}
     </div>
   );
 }

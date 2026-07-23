@@ -8,22 +8,34 @@ import {
   EmptyState,
   FullPageSpinner,
   IconButton,
+  Input,
   PageHeader,
+  Pagination,
   Table,
   type Column,
 } from '@/components/ui';
-import { useCategories, useDeleteCategory } from './hooks';
+import { useTableQuery } from '@/lib/useTableQuery';
+import { useCategoriesPage, useDeleteCategory } from './hooks';
 import { CategoryFormModal } from './CategoryFormModal';
 import { extractErrorMessage } from '@/lib/apiClient';
 import type { Category } from '@/types';
 
 export function CategoriesPage() {
-  const { data: categories, isLoading } = useCategories();
+  const query = useTableQuery({ defaultSortBy: 'name', defaultSortDir: 'asc' });
+  const { data, isLoading, isPlaceholderData } = useCategoriesPage({
+    page: query.page,
+    pageSize: query.pageSize,
+    search: query.search,
+    sortBy: query.sortBy,
+    sortDir: query.sortDir,
+  });
   const deleteCategory = useDeleteCategory();
   const [formOpen, setFormOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const categories = data?.data ?? [];
 
   const openCreate = () => {
     setEditingCategory(null);
@@ -47,8 +59,19 @@ export function CategoriesPage() {
   };
 
   const columns: Column<Category>[] = [
-    { key: 'name', header: 'Category', render: (c) => <span className="font-medium text-graphite-900">{c.name}</span> },
-    { key: 'count', header: 'Products', align: 'right', render: (c) => <Badge tone="neutral">{c.productCount}</Badge> },
+    {
+      key: 'name',
+      header: 'Category',
+      sortField: 'name',
+      render: (c) => <span className="font-medium text-graphite-900">{c.name}</span>,
+    },
+    {
+      key: 'count',
+      header: 'Products',
+      align: 'right',
+      sortField: 'productCount',
+      render: (c) => <Badge tone="neutral">{c.productCount}</Badge>,
+    },
     {
       key: 'actions',
       header: '',
@@ -76,15 +99,40 @@ export function CategoriesPage() {
         action={<Button onClick={openCreate} icon={<Plus className="h-4 w-4" strokeWidth={2} />}>Add category</Button>}
       />
 
-      <Card>
-        {!categories || categories.length === 0 ? (
+      <div className="mb-4 w-full max-w-xs">
+        <Input
+          placeholder="Search categories"
+          value={query.searchInput}
+          onChange={(e) => query.setSearchInput(e.target.value)}
+          onKeyDown={query.handleSearchKeyDown}
+        />
+      </div>
+
+      <Card className={isPlaceholderData ? 'opacity-60 transition-opacity' : undefined}>
+        {categories.length === 0 ? (
           <EmptyState
             title="No categories yet"
             description="Create a category to start organizing products."
             action={<Button onClick={openCreate} icon={<Plus className="h-4 w-4" strokeWidth={2} />}>Add category</Button>}
           />
         ) : (
-          <Table columns={columns} rows={categories} getRowKey={(c) => c.id} />
+          <>
+            <Table
+              columns={columns}
+              rows={categories}
+              getRowKey={(c) => c.id}
+              sortBy={query.sortBy}
+              sortDir={query.sortDir}
+              onSortChange={query.toggleSort}
+            />
+            <Pagination
+              page={data?.page ?? query.page}
+              pageSize={data?.pageSize ?? query.pageSize}
+              total={data?.total ?? 0}
+              onPageChange={query.setPage}
+              onPageSizeChange={query.setPageSize}
+            />
+          </>
         )}
       </Card>
 

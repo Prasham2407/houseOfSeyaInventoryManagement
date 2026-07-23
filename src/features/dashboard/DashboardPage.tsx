@@ -14,8 +14,8 @@ import {
 } from '@/components/ui';
 import { formatCurrency } from '@/lib/format';
 import { useDashboardSummary } from './hooks';
-import { InvoiceStatusBadge } from '@/features/invoices/statusBadge';
-import type { Invoice, Product } from '@/types';
+import { SaleStatusBadge } from '@/features/sales/statusBadge';
+import type { Sale, Product } from '@/types';
 
 export function DashboardPage() {
   const { data, isLoading } = useDashboardSummary();
@@ -23,11 +23,11 @@ export function DashboardPage() {
 
   if (isLoading || !data) return <FullPageSpinner />;
 
-  const invoiceColumns: Column<Invoice>[] = [
-    { key: 'number', header: 'Invoice', render: (inv) => <span className="font-medium text-graphite-900">{inv.invoiceNumber}</span> },
-    { key: 'customer', header: 'Customer', render: (inv) => inv.customerName },
-    { key: 'status', header: 'Status', render: (inv) => <InvoiceStatusBadge status={inv.status} /> },
-    { key: 'total', header: 'Total', align: 'right', render: (inv) => formatCurrency(inv.total) },
+  const saleColumns: Column<Sale>[] = [
+    { key: 'number', header: 'Sale', render: (sale) => <span className="font-medium text-graphite-900">{sale.saleNumber}</span> },
+    { key: 'customer', header: 'Customer', render: (sale) => sale.customerName },
+    { key: 'status', header: 'Status', render: (sale) => <SaleStatusBadge status={sale.status} /> },
+    { key: 'total', header: 'Total', align: 'right', render: (sale) => formatCurrency(sale.total) },
   ];
 
   const productColumns: Column<Product>[] = [
@@ -71,30 +71,30 @@ export function DashboardPage() {
           label="Revenue this month"
           value={formatCurrency(data.revenueThisMonth)}
           icon={<IndianRupee className="h-4 w-4" strokeWidth={2} />}
-          hint={`${data.invoicesThisMonth} invoice(s)`}
+          hint={`${data.salesThisMonth} sale(s)`}
         />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader
-            title="Recent invoices"
+            title="Recent sales"
             action={
-              <button className="cursor-pointer text-sm font-medium text-brand-600 hover:underline" onClick={() => navigate('/invoices')}>
+              <button className="cursor-pointer text-sm font-medium text-brand-600 hover:underline" onClick={() => navigate('/sales')}>
                 View all
               </button>
             }
           />
-          {data.recentInvoices.length === 0 ? (
+          {data.recentSales.length === 0 ? (
             <CardBody>
-              <EmptyState title="No invoices yet" description="Create your first invoice to see it here." />
+              <EmptyState title="No sales yet" description="Add your first sale to see it here." />
             </CardBody>
           ) : (
             <Table
-              columns={invoiceColumns}
-              rows={data.recentInvoices}
-              getRowKey={(inv) => inv.id}
-              onRowClick={(inv) => navigate(`/invoices/${inv.id}`)}
+              columns={saleColumns}
+              rows={data.recentSales}
+              getRowKey={(sale) => sale.id}
+              onRowClick={(sale) => navigate(`/sales/${sale.id}`)}
             />
           )}
         </Card>

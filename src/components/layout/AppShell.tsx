@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, Users, Package, Tags, FileText, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, Package, Tags, ShoppingCart, UserCog, LogOut } from 'lucide-react';
 import { useAuth } from '@/features/auth/useAuth';
 import { cn } from '@/lib/cn';
 
@@ -10,16 +10,19 @@ interface NavItem {
   end?: boolean;
 }
 
-const navItems: NavItem[] = [
+const baseNavItems: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/customers', label: 'Customers', icon: Users },
   { to: '/inventory/categories', label: 'Categories', icon: Tags },
   { to: '/inventory/products', label: 'Products', icon: Package },
-  { to: '/invoices', label: 'Invoices', icon: FileText },
+  { to: '/sales', label: 'Sales', icon: ShoppingCart },
 ];
+
+const adminNavItem: NavItem = { to: '/users', label: 'Users', icon: UserCog };
 
 export function AppShell() {
   const { user, logout } = useAuth();
+  const navItems = user?.role === 'ADMIN' ? [...baseNavItems, adminNavItem] : baseNavItems;
 
   return (
     <div className="flex min-h-screen flex-col bg-graphite-50 lg:flex-row">

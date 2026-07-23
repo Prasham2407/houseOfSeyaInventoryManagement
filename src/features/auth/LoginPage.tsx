@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Boxes, ShieldCheck, TrendingUp } from 'lucide-react';
 import { useAuth } from './useAuth';
 import { Button, Input } from '@/components/ui';
@@ -16,7 +16,7 @@ type FormValues = z.infer<typeof schema>;
 
 const highlights = [
   { icon: Boxes, text: 'Real-time inventory across every warehouse and SKU' },
-  { icon: TrendingUp, text: 'Invoice, track revenue, and reorder before you run out' },
+  { icon: TrendingUp, text: 'Record sales, track revenue, and reorder before you run out' },
   { icon: ShieldCheck, text: 'Role-based access control for your whole team' },
 ];
 
@@ -105,6 +105,12 @@ export function LoginPage() {
             <Button type="submit" className="mt-2 w-full" isLoading={isSubmitting}>
               Sign in
             </Button>
+            <Link
+              to="/forgot-password"
+              className="text-center text-xs font-medium text-brand-600 hover:underline"
+            >
+              Forgot password?
+            </Link>
           </form>
 
           <p className="mt-6 text-center text-xs text-graphite-400">

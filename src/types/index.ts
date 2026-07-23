@@ -1,10 +1,20 @@
 export type Role = 'ADMIN' | 'STAFF';
 
+export type SortDir = 'asc' | 'desc';
+
+export interface PaginatedResult<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 export interface User {
   id: string;
   name: string;
   email: string;
   role: Role;
+  createdAt?: string;
 }
 
 export interface Customer {
@@ -13,7 +23,7 @@ export interface Customer {
   email: string | null;
   phone: string | null;
   address: string | null;
-  totalInvoices: number;
+  totalSales: number;
   createdAt: string;
 }
 
@@ -47,9 +57,9 @@ export interface StockMovement {
   createdAt: string;
 }
 
-export type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'PAID' | 'CANCELLED';
+export type SaleStatus = 'DRAFT' | 'ISSUED' | 'PAID' | 'CANCELLED';
 
-export interface InvoiceItem {
+export interface SaleItem {
   id: string;
   productId: string;
   productName: string;
@@ -59,13 +69,13 @@ export interface InvoiceItem {
   lineTotal: number;
 }
 
-export interface Invoice {
+export interface Sale {
   id: string;
-  invoiceNumber: string;
+  saleNumber: string;
   customerId: string;
   customerName: string;
-  status: InvoiceStatus;
-  items: InvoiceItem[];
+  status: SaleStatus;
+  items: SaleItem[];
   subtotal: number;
   tax: number;
   total: number;
@@ -77,8 +87,8 @@ export interface DashboardSummary {
   totalProducts: number;
   lowStockCount: number;
   totalCustomers: number;
-  invoicesThisMonth: number;
+  salesThisMonth: number;
   revenueThisMonth: number;
-  recentInvoices: Invoice[];
+  recentSales: Sale[];
   lowStockProducts: Product[];
 }

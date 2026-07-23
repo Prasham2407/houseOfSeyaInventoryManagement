@@ -1,0 +1,92 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import * as api from './api';
+import { productKeys } from '@/features/inventory/hooks';
+
+export const saleKeys = {
+  all: ['sales'] as const,
+  detail: (id: string) => ['sales', id] as const,
+  page: (params: api.FetchSalesPageParams) => ['sales', 'page', params] as const,
+};
+
+export function useSales() {
+  return useQuery({ queryKey: saleKeys.all, queryFn: api.fetchSales });
+}
+
+export function useSalesPage(params: api.FetchSalesPageParams) {
+  return useQuery({
+    queryKey: saleKeys.page(params),
+    queryFn: () => api.fetchSalesPage(params),
+    placeholderData: (previousData) => previousData,
+  });
+}
+
+export function useSale(id: string | undefined) {
+  return useQuery({
+    queryKey: saleKeys.detail(id ?? ''),
+    queryFn: () => api.fetchSale(id as string),
+    enabled: !!id,
+  });
+}
+
+function invalidateAll(queryClient: ReturnType<typeof useQueryClient>) {
+  return queryClient.invalidateQueries({ queryKey: saleKeys.all, refetchType: 'all' });
+}
+
+function invalidateDetail(queryClient: ReturnType<typeof useQueryClient>, id: string) {
+  return queryClient.invalidateQueries({ queryKey: saleKeys.detail(id), refetchType: 'all' });
+}
+
+export function useCreateSale() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.createSale,
+    onSuccess: () => invalidateAll(queryClient),
+  });
+}
+
+export function useUpdateSale() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: api.SaleInput }) => api.updateSale(id, input),
+    onSuccess: (sale) => {
+      invalidateAll(queryClient);
+      invalidateDetail(queryClient, sale.id);
+    },
+  });
+}
+
+function invalidateAfterStockChange(queryClient: ReturnType<typeof useQueryClient>, id: string) {
+  invalidateAll(queryClient);
+  invalidateDetail(queryClient, id);
+  queryClient.invalidateQueries({ queryKey: productKeys.all, refetchType: 'all' });
+}
+
+export function useIssueSale() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.issueSale,
+    onSuccess: (sale) => invalidateAfterStockChange(queryClient, sale.id),
+  });
+}
+
+export function useMarkSalePaid() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.markSalePaid,
+    onSuccess: (sale) => {
+      invalidateAll(queryClient);
+      invalidateDetail(queryClient, sale.id);
+    },
+  });
+}
+
+export function useCancelSale() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.cancelSale,
+    onSuccess: (sale) => {
+      invalidateAll(queryClient);
+      invalidateDetail(queryClient, sale.id);
+    },
+  });
+}

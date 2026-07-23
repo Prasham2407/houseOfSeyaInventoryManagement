@@ -29,3 +29,16 @@ export async function refreshSession(): Promise<{ user: User; accessToken: strin
   const { data } = await apiClient.post<{ user: User; accessToken: string }>('/auth/refresh');
   return data;
 }
+
+export async function forgotPassword(email: string): Promise<void> {
+  await apiClient.post('/auth/forgot-password', { email });
+}
+
+export async function verifyResetCode(email: string, code: string): Promise<{ resetToken: string }> {
+  const { data } = await apiClient.post<{ resetToken: string }>('/auth/verify-reset-code', { email, code });
+  return data;
+}
+
+export async function resetPassword(resetToken: string, password: string): Promise<void> {
+  await apiClient.post('/auth/reset-password', { resetToken, password });
+}

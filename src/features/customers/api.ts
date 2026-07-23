@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/apiClient';
-import type { Customer } from '@/types';
+import type { Customer, PaginatedResult, SortDir } from '@/types';
 
 export interface CustomerInput {
   name: string;
@@ -8,8 +8,21 @@ export interface CustomerInput {
   address?: string;
 }
 
+export interface FetchCustomersPageParams {
+  page: number;
+  pageSize: number;
+  search?: string;
+  sortBy?: string;
+  sortDir?: SortDir;
+}
+
 export async function fetchCustomers(): Promise<Customer[]> {
   const { data } = await apiClient.get<Customer[]>('/customers');
+  return data;
+}
+
+export async function fetchCustomersPage(params: FetchCustomersPageParams): Promise<PaginatedResult<Customer>> {
+  const { data } = await apiClient.get<PaginatedResult<Customer>>('/customers', { params });
   return data;
 }
 
