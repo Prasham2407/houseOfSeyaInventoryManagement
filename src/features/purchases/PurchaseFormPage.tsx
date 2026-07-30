@@ -4,44 +4,51 @@ import { Plus, Trash2 } from 'lucide-react';
 import { extractErrorMessage } from '@/lib/apiClient';
 import { formatCurrency } from '@/lib/format';
 import { Button, Card, CardBody, CardHeader, EmptyState, FullPageSpinner, IconButton, Input, PageHeader, Select, SearchableCombobox } from '@/components/ui';
-import { useCustomers } from '@/features/customers/hooks';
-import { CustomerFormModal } from '@/features/customers/CustomerFormModal';
+import { useVendors } from '@/features/vendors/hooks';
+import { VendorFormModal } from '@/features/vendors/VendorFormModal';
 import { useProducts } from '@/features/inventory/hooks';
-import { useCreateSale, useSale, useUpdateSale } from './hooks';
-import type { Customer } from '@/types';
+import { useCreatePurchase, usePurchase, useUpdatePurchase } from './hooks';
+import type { Vendor } from '@/types';
 
 interface DraftLine {
   productId: string;
   quantity: number;
+  unitCost: number;
 }
 
-export function SaleFormPage() {
+export function PurchaseFormPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const isEdit = !!id;
 
-  const { data: customers } = useCustomers();
+  const { data: vendors } = useVendors();
   const { data: products } = useProducts();
-  const { data: existingSale, isLoading: isLoadingSale, isError: isSaleError, error: saleFetchError } = useSale(id);
-  const createSale = useCreateSale();
-  const updateSale = useUpdateSale();
+  const { data: existingPurchase, isLoading: isLoadingPurchase, isError: isPurchaseError, error: purchaseFetchError } = usePurchase(id);
+  const createPurchase = useCreatePurchase();
+  const updatePurchase = useUpdatePurchase();
 
-  const [customerId, setCustomerId] = useState('');
+  const [vendorId, setVendorId] = useState('');
   const [lines, setLines] = useState<DraftLine[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
-  const [customerModalOpen, setCustomerModalOpen] = useState(false);
+  const [vendorModalOpen, setVendorModalOpen] = useState(false);
 
   useEffect(() => {
-    if (!isEdit || !existingSale || initialized) return;
-    if (existingSale.status !== 'DRAFT') {
-      setError('Only draft sales can be edited.');
+    if (!isEdit || !existingPurchase || initialized) return;
+    if (existingPurchase.status !== 'DRAFT') {
+      setError('Only draft purchases can be edited.');
       return;
     }
-    setCustomerId(existingSale.customerId);
-    setLines(existingSale.items.map((item) => ({ productId: item.productId, quantity: item.quantity })));
+    setVendorId(existingPurchase.vendorId);
+    setLines(
+      existingPurchase.items.map((item) => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        unitCost: item.unitCost,
+      })),
+    );
     setInitialized(true);
-  }, [isEdit, existingSale, initialized]);
+  }, [isEdit, existingPurchase, initialized]);
 
   const availableProducts = useMemo(
     () => products?.filter((p) => !lines.some((l) => l.productId === p.id)) ?? [],
@@ -50,7 +57,7 @@ export function SaleFormPage() {
 
   const addLine = () => {
     if (availableProducts.length === 0) return;
-    setLines((prev) => [...prev, { productId: availableProducts[0].id, quantity: 1 }]);
+    setLines((prev) => [...prev, { productId: availableProducts[0].id, quantity: 1, unitCost: 0 }]);
   };
 
   const updateLine = (index: number, patch: Partial<DraftLine>) => {
@@ -64,57 +71,55 @@ export function SaleFormPage() {
   const productById = useMemo(() => new Map(products?.map((p) => [p.id, p])), [products]);
 
   const getLineQuantityError = (line: DraftLine): string | null => {
-    const product = productById.get(line.productId);
-    if (!product) return null;
     if (!line.quantity || line.quantity < 1) return 'Enter a quantity of at least 1.';
-    if (line.quantity > product.quantityInStock) {
-      return `Only ${product.quantityInStock} in stock.`;
-    }
     return null;
   };
 
-  const subtotal = lines.reduce((sum, l) => {
+  const getLineCostError = (line: DraftLine): string | null => {
+    if (line.unitCost < 0) return 'Cost cannot be negative.';
+    return null;
+  };
+
+  const total = lines.reduce((sum, l) => {
     const product = productById.get(l.productId);
-    return sum + (product ? product.unitPrice * l.quantity : 0);
+    return sum + (product ? l.unitCost * l.quantity : 0);
   }, 0);
-  const tax = subtotal * 0.1;
-  const total = subtotal + tax;
 
   const handleSubmit = async () => {
     setError(null);
-    if (!customerId) {
-      setError('Select a customer.');
+    if (!vendorId) {
+      setError('Select a vendor.');
       return;
     }
     if (lines.length === 0) {
       setError('Add at least one product line.');
       return;
     }
-    if (lines.some((line) => getLineQuantityError(line) !== null)) {
-      setError('Fix the highlighted quantities before saving.');
+    if (lines.some((line) => getLineQuantityError(line) !== null || getLineCostError(line) !== null)) {
+      setError('Fix the highlighted fields before saving.');
       return;
     }
     const input = {
-      customerId,
-      items: lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
+      vendorId,
+      items: lines.map((l) => ({ productId: l.productId, quantity: l.quantity, unitCost: l.unitCost })),
     };
 
     try {
-      const sale = isEdit
-        ? await updateSale.mutateAsync({ id: id as string, input })
-        : await createSale.mutateAsync(input);
-      navigate(`/sales/${sale.id}`, { replace: true });
+      const purchase = isEdit
+        ? await updatePurchase.mutateAsync({ id: id as string, input })
+        : await createPurchase.mutateAsync(input);
+      navigate(`/purchases/${purchase.id}`, { replace: true });
     } catch (err) {
-      setError(extractErrorMessage(err, isEdit ? 'Could not update sale.' : 'Could not create sale.'));
+      setError(extractErrorMessage(err, isEdit ? 'Could not update purchase.' : 'Could not create purchase.'));
     }
   };
 
-  if (isEdit && isLoadingSale) return <FullPageSpinner />;
+  if (isEdit && isLoadingPurchase) return <FullPageSpinner />;
 
-  if (isEdit && isSaleError) {
+  if (isEdit && isPurchaseError) {
     return (
       <div className="py-16 text-center text-sm text-red-600">
-        {extractErrorMessage(saleFetchError, 'Could not load this sale.')}
+        {extractErrorMessage(purchaseFetchError, 'Could not load this purchase.')}
       </div>
     );
   }
@@ -122,26 +127,26 @@ export function SaleFormPage() {
   return (
     <div>
       <PageHeader
-        title={isEdit ? 'Edit sale' : 'Add sale'}
-        description="Select a customer and add the products being sold."
+        title={isEdit ? 'Edit purchase' : 'Add purchase'}
+        description="Select a vendor and add the products being ordered."
       />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <Card>
-            <CardHeader title="Customer" />
+            <CardHeader title="Vendor" />
             <CardBody>
               <SearchableCombobox
-                label="Customer"
-                items={customers ?? []}
-                value={customerId || null}
-                onChange={(customer: Customer) => setCustomerId(customer.id)}
-                getOptionLabel={(c) => c.name}
-                getOptionValue={(c) => c.id}
-                getOptionSublabel={(c) => c.email ?? undefined}
-                placeholder="Search customer by name or email…"
-                addNewLabel="Add new customer"
-                onAddNew={() => setCustomerModalOpen(true)}
+                label="Vendor"
+                items={vendors ?? []}
+                value={vendorId || null}
+                onChange={(vendor: Vendor) => setVendorId(vendor.id)}
+                getOptionLabel={(v) => v.companyName}
+                getOptionValue={(v) => v.id}
+                getOptionSublabel={(v) => v.contactPerson ?? undefined}
+                placeholder="Search vendor by company or contact…"
+                addNewLabel="Add new vendor"
+                onAddNew={() => setVendorModalOpen(true)}
               />
             </CardBody>
           </Card>
@@ -163,14 +168,14 @@ export function SaleFormPage() {
             />
             <CardBody>
               {lines.length === 0 ? (
-                <EmptyState title="No products added" description="Use “Add product” to start building this sale." />
+                <EmptyState title="No products added" description="Use the Add product button to start building this purchase order." />
               ) : (
                 <div className="flex flex-col gap-3">
                   {lines.map((line, index) => {
                     const product = productById.get(line.productId);
                     return (
                       <div key={index} className="grid grid-cols-1 items-end gap-3 rounded-lg border border-graphite-100 p-3 sm:grid-cols-12">
-                        <div className="sm:col-span-6">
+                        <div className="sm:col-span-5">
                           <Select
                             label="Product"
                             value={line.productId}
@@ -189,21 +194,28 @@ export function SaleFormPage() {
                             label="Qty"
                             type="number"
                             min="1"
-                            max={product?.quantityInStock}
                             value={line.quantity}
                             onChange={(e) => updateLine(index, { quantity: Number(e.target.value) })}
                             error={getLineQuantityError(line) ?? undefined}
                           />
                         </div>
+                        <div className="sm:col-span-2">
+                          <Input
+                            label="Unit cost"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={line.unitCost}
+                            onChange={(e) => updateLine(index, { unitCost: Number(e.target.value) })}
+                            error={getLineCostError(line) ?? undefined}
+                          />
+                        </div>
                         <div className="flex items-end justify-between gap-2 sm:col-span-2 sm:block sm:text-right sm:text-sm sm:text-graphite-500">
                           {product && (
-                            <>
-                              <p className="text-xs text-graphite-400 sm:text-xs">In stock: {product.quantityInStock}</p>
-                              <p className="font-medium text-graphite-800 sm:font-medium sm:text-graphite-800">{formatCurrency(product.unitPrice * line.quantity)}</p>
-                            </>
+                            <p className="font-medium text-graphite-800">{formatCurrency(line.unitCost * line.quantity)}</p>
                           )}
                         </div>
-                        <div className="flex justify-end sm:col-span-2">
+                        <div className="flex justify-end sm:col-span-1">
                           <IconButton label="Remove line item" tone="danger" onClick={() => removeLine(index)}>
                             <Trash2 className="h-4 w-4" strokeWidth={2} />
                           </IconButton>
@@ -223,16 +235,8 @@ export function SaleFormPage() {
             <CardBody>
               <dl className="flex flex-col gap-2 text-sm">
                 <div className="flex justify-between">
-                  <dt className="text-graphite-500">Subtotal</dt>
-                  <dd className="font-medium text-graphite-800">{formatCurrency(subtotal)}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-graphite-500">Tax (10%)</dt>
-                  <dd className="font-medium text-graphite-800">{formatCurrency(tax)}</dd>
-                </div>
-                <div className="mt-1 flex justify-between border-t border-graphite-100 pt-2 text-base">
-                  <dt className="font-semibold text-graphite-900">Total</dt>
-                  <dd className="font-semibold text-graphite-900">{formatCurrency(total)}</dd>
+                  <dt className="text-graphite-500">Total cost</dt>
+                  <dd className="font-medium text-graphite-800">{formatCurrency(total)}</dd>
                 </div>
               </dl>
 
@@ -241,25 +245,25 @@ export function SaleFormPage() {
               <Button
                 className="mt-6 w-full"
                 onClick={handleSubmit}
-                isLoading={isEdit ? updateSale.isPending : createSale.isPending}
-                disabled={lines.length === 0 || lines.some((line) => getLineQuantityError(line) !== null)}
+                isLoading={isEdit ? updatePurchase.isPending : createPurchase.isPending}
+                disabled={lines.length === 0 || lines.some((line) => getLineQuantityError(line) !== null || getLineCostError(line) !== null)}
               >
-                {isEdit ? 'Save changes' : 'Save draft sale'}
+                {isEdit ? 'Save changes' : 'Save draft purchase'}
               </Button>
               <p className="mt-2 text-center text-xs text-graphite-400">
-                Stock is only deducted once the sale is issued as an invoice.
+                Stock is only updated when items are received.
               </p>
             </CardBody>
           </Card>
         </div>
       </div>
 
-      <CustomerFormModal
-        isOpen={customerModalOpen}
-        onClose={() => setCustomerModalOpen(false)}
-        onCreated={(customer) => {
-          setCustomerId(customer.id);
-          setCustomerModalOpen(false);
+      <VendorFormModal
+        isOpen={vendorModalOpen}
+        onClose={() => setVendorModalOpen(false)}
+        onCreated={(vendor) => {
+          setVendorId(vendor.id);
+          setVendorModalOpen(false);
         }}
       />
     </div>

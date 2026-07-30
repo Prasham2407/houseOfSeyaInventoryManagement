@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, IndianRupee, Package, Users } from 'lucide-react';
+import { AlertTriangle, IndianRupee, Package, Users, Truck, ClipboardList, ClipboardCheck } from 'lucide-react';
 import {
-  Badge,
   Card,
   CardBody,
   CardHeader,
@@ -15,7 +14,8 @@ import {
 import { formatCurrency } from '@/lib/format';
 import { useDashboardSummary } from './hooks';
 import { SaleStatusBadge } from '@/features/sales/statusBadge';
-import type { Sale, Product } from '@/types';
+import { PurchaseStatusBadge } from '@/features/purchases/statusBadge';
+import type { Sale, Product, Purchase } from '@/types';
 
 export function DashboardPage() {
   const { data, isLoading } = useDashboardSummary();
@@ -30,98 +30,74 @@ export function DashboardPage() {
     { key: 'total', header: 'Total', align: 'right', render: (sale) => formatCurrency(sale.total) },
   ];
 
-  const productColumns: Column<Product>[] = [
-    {
-      key: 'name',
-      header: 'Product',
-      render: (p) => (
-        <div>
-          <p className="font-medium text-graphite-900">{p.name}</p>
-          <p className="text-xs text-graphite-400">{p.sku}</p>
-        </div>
-      ),
-    },
-    {
-      key: 'stock',
-      header: 'Stock',
-      align: 'right',
-      render: (p) => (
-        <span className="flex items-center justify-end gap-2">
-          <span className="font-medium text-amber-600">{p.quantityInStock}</span>
-          <Badge tone="warning">Reorder at {p.reorderLevel}</Badge>
-        </span>
-      ),
-    },
+  const purchaseColumns: Column<Purchase>[] = [
+    { key: 'number', header: 'PO #', render: (p) => <span className="font-medium text-graphite-900">{p.purchaseNumber}</span> },
+    { key: 'vendor', header: 'Vendor', render: (p) => p.vendorName },
+    { key: 'status', header: 'Status', render: (p) => <PurchaseStatusBadge status={p.status} /> },
+    { key: 'total', header: 'Total', align: 'right', render: (p) => formatCurrency(p.total) },
+  ];
+
+  const lowStockColumns: Column<Product>[] = [
+    { key: 'name', header: 'Product', render: (p) => <span className="font-medium text-graphite-900">{p.name}</span> },
+    { key: 'sku', header: 'SKU', render: (p) => p.sku },
+    { key: 'stock', header: 'Stock', align: 'right', render: (p) => <span className="font-medium text-amber-600">{p.quantityInStock}</span> },
   ];
 
   return (
     <div>
-      <PageHeader title="Dashboard" description="A quick overview of your inventory and billing activity." />
+      <PageHeader title="Dashboard" description="Overview of your inventory, sales, and purchases." />
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile label="Total products" value={data.totalProducts} icon={<Package className="h-4 w-4" strokeWidth={2} />} />
-        <StatTile
-          label="Low stock items"
-          value={data.lowStockCount}
-          icon={<AlertTriangle className="h-4 w-4" strokeWidth={2} />}
-          tone={data.lowStockCount > 0 ? 'warning' : 'neutral'}
-        />
-        <StatTile label="Customers" value={data.totalCustomers} icon={<Users className="h-4 w-4" strokeWidth={2} />} />
-        <StatTile
-          label="Revenue this month"
-          value={formatCurrency(data.revenueThisMonth)}
-          icon={<IndianRupee className="h-4 w-4" strokeWidth={2} />}
-          hint={`${data.salesThisMonth} sale(s)`}
-        />
+        <StatTile label="Low stock items" value={data.lowStockCount} icon={<AlertTriangle className="h-4 w-4" strokeWidth={2} />} tone={data.lowStockCount > 0 ? 'warning' : 'neutral'} />
+        <StatTile label="Total customers" value={data.totalCustomers} icon={<Users className="h-4 w-4" strokeWidth={2} />} />
+        <StatTile label="Total vendors" value={data.totalVendors} icon={<Truck className="h-4 w-4" strokeWidth={2} />} />
+      </div>
+
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatTile label="Sales this month" value={data.salesThisMonth} icon={<IndianRupee className="h-4 w-4" strokeWidth={2} />} />
+        <StatTile label="Revenue this month" value={formatCurrency(data.revenueThisMonth)} icon={<IndianRupee className="h-4 w-4" strokeWidth={2} />} />
+        <StatTile label="Purchases this month" value={data.purchasesThisMonth} icon={<ClipboardList className="h-4 w-4" strokeWidth={2} />} />
+        <StatTile label="Pending POs" value={data.pendingPOs} icon={<ClipboardCheck className="h-4 w-4" strokeWidth={2} />} tone={data.pendingPOs > 0 ? 'warning' : 'neutral'} />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader
             title="Recent sales"
-            action={
-              <button className="cursor-pointer text-sm font-medium text-brand-600 hover:underline" onClick={() => navigate('/sales')}>
-                View all
-              </button>
-            }
+            action={<button onClick={() => navigate('/sales')} className="text-sm font-medium text-brand-600 hover:underline">View all</button>}
           />
           {data.recentSales.length === 0 ? (
-            <CardBody>
-              <EmptyState title="No sales yet" description="Add your first sale to see it here." />
-            </CardBody>
+            <CardBody><EmptyState title="No sales yet" description="Sales will appear here once created." /></CardBody>
           ) : (
-            <Table
-              columns={saleColumns}
-              rows={data.recentSales}
-              getRowKey={(sale) => sale.id}
-              onRowClick={(sale) => navigate(`/sales/${sale.id}`)}
-            />
+            <Table columns={saleColumns} rows={data.recentSales} getRowKey={(s) => s.id} onRowClick={(s) => navigate(`/sales/${s.id}`)} />
           )}
         </Card>
 
         <Card>
           <CardHeader
-            title="Low stock alerts"
-            action={
-              <button className="cursor-pointer text-sm font-medium text-brand-600 hover:underline" onClick={() => navigate('/inventory/products')}>
-                View all products
-              </button>
-            }
+            title="Recent purchases"
+            action={<button onClick={() => navigate('/purchases')} className="text-sm font-medium text-brand-600 hover:underline">View all</button>}
           />
-          {data.lowStockProducts.length === 0 ? (
-            <CardBody>
-              <EmptyState title="All stocked up" description="No products are currently below their reorder level." />
-            </CardBody>
+          {data.recentPurchases.length === 0 ? (
+            <CardBody><EmptyState title="No purchases yet" description="Purchases will appear here once created." /></CardBody>
           ) : (
-            <Table
-              columns={productColumns}
-              rows={data.lowStockProducts}
-              getRowKey={(p) => p.id}
-              onRowClick={() => navigate('/inventory/products')}
-            />
+            <Table columns={purchaseColumns} rows={data.recentPurchases} getRowKey={(p) => p.id} onRowClick={(p) => navigate(`/purchases/${p.id}`)} />
           )}
         </Card>
       </div>
+
+      <Card className="mt-6">
+        <CardHeader
+          title="Low stock alerts"
+          action={<button onClick={() => navigate('/inventory/products')} className="text-sm font-medium text-brand-600 hover:underline">View all</button>}
+        />
+        {data.lowStockProducts.length === 0 ? (
+          <CardBody><EmptyState title="All stocked up" description="No products are below their reorder level." /></CardBody>
+        ) : (
+          <Table columns={lowStockColumns} rows={data.lowStockProducts} getRowKey={(p) => p.id} />
+        )}
+      </Card>
     </div>
   );
 }

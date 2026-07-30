@@ -12,6 +12,11 @@ import { SubcategoriesPage } from '@/features/inventory/SubcategoriesPage';
 import { SalesListPage } from '@/features/sales/SalesListPage';
 import { SaleFormPage } from '@/features/sales/SaleFormPage';
 import { SaleDetailPage } from '@/features/sales/SaleDetailPage';
+import { VendorsListPage } from '@/features/vendors/VendorsListPage';
+import { PurchasesListPage } from '@/features/purchases/PurchasesListPage';
+import { PurchaseFormPage } from '@/features/purchases/PurchaseFormPage';
+import { PurchaseDetailPage } from '@/features/purchases/PurchaseDetailPage';
+import { ReportsPage } from '@/features/reports/ReportsPage';
 import { UsersListPage } from '@/features/users/UsersListPage';
 
 export function AppRoutes() {
@@ -36,6 +41,12 @@ export function AppRoutes() {
         <Route path="/sales/new" element={<SaleFormPage />} />
         <Route path="/sales/:id/edit" element={<SaleFormPage />} />
         <Route path="/sales/:id" element={<SaleDetailPage />} />
+        <Route path="/vendors" element={<VendorsListPage />} />
+        <Route path="/purchases" element={<PurchasesListPage />} />
+        <Route path="/purchases/new" element={<PurchaseFormPage />} />
+        <Route path="/purchases/:id/edit" element={<PurchaseFormPage />} />
+        <Route path="/purchases/:id" element={<PurchaseDetailPage />} />
+        <Route path="/reports" element={<ReportsPage />} />
         <Route
           path="/users"
           element={

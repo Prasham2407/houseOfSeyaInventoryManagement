@@ -4,11 +4,12 @@ import { z } from 'zod';
 import { useEffect } from 'react';
 import { Button, Input, Modal, Select } from '@/components/ui';
 import { COUNTRY_CODES, DEFAULT_COUNTRY_DIAL_CODE, joinPhoneNumber, splitPhoneNumber } from '@/lib/countryCodes';
-import { useCreateCustomer, useUpdateCustomer } from './hooks';
-import type { Customer } from '@/types';
+import { useCreateVendor, useUpdateVendor } from './hooks';
+import type { Vendor } from '@/types';
 
 const schema = z.object({
-  name: z.string().min(1, 'Name is required'),
+  companyName: z.string().min(1, 'Company name is required'),
+  contactPerson: z.string().optional(),
   email: z.string().email('Enter a valid email').optional().or(z.literal('')),
   phoneDialCode: z.string(),
   phoneNumber: z.string().optional(),
@@ -17,20 +18,20 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-export function CustomerFormModal({
+export function VendorFormModal({
   isOpen,
   onClose,
-  customer,
+  vendor,
   onCreated,
 }: {
   isOpen: boolean;
   onClose: () => void;
-  customer?: Customer | null;
-  onCreated?: (customer: Customer) => void;
+  vendor?: Vendor | null;
+  onCreated?: (vendor: Vendor) => void;
 }) {
-  const isEditing = !!customer;
-  const createCustomer = useCreateCustomer();
-  const updateCustomer = useUpdateCustomer();
+  const isEditing = !!vendor;
+  const createVendor = useCreateVendor();
+  const updateVendor = useUpdateVendor();
 
   const {
     register,
@@ -41,29 +42,31 @@ export function CustomerFormModal({
 
   useEffect(() => {
     if (isOpen) {
-      const { dialCode, number } = splitPhoneNumber(customer?.phone);
+      const { dialCode, number } = splitPhoneNumber(vendor?.phone);
       reset({
-        name: customer?.name ?? '',
-        email: customer?.email ?? '',
+        companyName: vendor?.companyName ?? '',
+        contactPerson: vendor?.contactPerson ?? '',
+        email: vendor?.email ?? '',
         phoneDialCode: dialCode || DEFAULT_COUNTRY_DIAL_CODE,
         phoneNumber: number,
-        address: customer?.address ?? '',
+        address: vendor?.address ?? '',
       });
     }
-  }, [isOpen, customer, reset]);
+  }, [isOpen, vendor, reset]);
 
   const onSubmit = async (values: FormValues) => {
     const input = {
-      name: values.name,
+      companyName: values.companyName,
+      contactPerson: values.contactPerson,
       email: values.email,
       phone: joinPhoneNumber(values.phoneDialCode, values.phoneNumber ?? ''),
       address: values.address,
     };
-    if (isEditing && customer) {
-      await updateCustomer.mutateAsync({ id: customer.id, input });
+    if (isEditing && vendor) {
+      await updateVendor.mutateAsync({ id: vendor.id, input });
       onClose();
     } else {
-      const created = await createCustomer.mutateAsync(input);
+      const created = await createVendor.mutateAsync(input);
       if (onCreated) {
         onCreated(created);
       } else {
@@ -76,20 +79,21 @@ export function CustomerFormModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditing ? 'Edit customer' : 'Add customer'}
+      title={isEditing ? 'Edit vendor' : 'Add vendor'}
       footer={
         <>
           <Button variant="secondary" onClick={onClose} type="button">
             Cancel
           </Button>
-          <Button type="submit" form="customer-form" isLoading={isSubmitting}>
-            {isEditing ? 'Save changes' : 'Add customer'}
+          <Button type="submit" form="vendor-form" isLoading={isSubmitting}>
+            {isEditing ? 'Save changes' : 'Add vendor'}
           </Button>
         </>
       }
     >
-      <form id="customer-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-        <Input label="Name" placeholder="Company or contact name" error={errors.name?.message} {...register('name')} />
+      <form id="vendor-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+        <Input label="Company name" placeholder="Business / company name" error={errors.companyName?.message} {...register('companyName')} />
+        <Input label="Contact person" placeholder="Person you deal with" error={errors.contactPerson?.message} {...register('contactPerson')} />
         <Input label="Email" type="email" placeholder="name@company.com" error={errors.email?.message} {...register('email')} />
         <div className="flex flex-col gap-1.5">
           <label className="text-[13px] font-medium text-graphite-700">Phone</label>

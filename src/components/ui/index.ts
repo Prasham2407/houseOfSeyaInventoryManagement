@@ -13,3 +13,4 @@ export { ConfirmModal } from './ConfirmModal';
 export { IconButton } from './IconButton';
 export { PageHeader } from './PageHeader';
 export { Pagination } from './Pagination';
+export { SearchableCombobox } from './SearchableCombobox';
