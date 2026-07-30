@@ -30,6 +30,14 @@ export interface Customer {
 export interface Category {
   id: string;
   name: string;
+  subcategoryCount: number;
+}
+
+export interface Subcategory {
+  id: string;
+  name: string;
+  categoryId: string;
+  categoryName: string;
   productCount: number;
 }
 
@@ -41,6 +49,8 @@ export interface Product {
   unitPrice: number;
   quantityInStock: number;
   reorderLevel: number;
+  subcategoryId: string | null;
+  subcategoryName: string | null;
   categoryId: string | null;
   categoryName: string | null;
   createdAt: string;

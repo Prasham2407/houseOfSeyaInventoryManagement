@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, Users, Package, Tags, ShoppingCart, UserCog, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, Package, Tags, Layers, ShoppingCart, UserCog, LogOut } from 'lucide-react';
 import { useAuth } from '@/features/auth/useAuth';
 import { cn } from '@/lib/cn';
 
@@ -14,6 +14,7 @@ const baseNavItems: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/customers', label: 'Customers', icon: Users },
   { to: '/inventory/categories', label: 'Categories', icon: Tags },
+  { to: '/inventory/subcategories', label: 'Subcategories', icon: Layers },
   { to: '/inventory/products', label: 'Products', icon: Package },
   { to: '/sales', label: 'Sales', icon: ShoppingCart },
 ];

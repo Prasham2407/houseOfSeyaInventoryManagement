@@ -70,10 +70,18 @@ export function ProductsListPage() {
       ),
     },
     {
-      key: 'category',
-      header: 'Category',
-      sortField: 'category',
-      render: (p) => p.categoryName ?? <span className="text-graphite-300">—</span>,
+      key: 'subcategory',
+      header: 'Subcategory',
+      sortField: 'subcategory',
+      render: (p) =>
+        p.subcategoryName ? (
+          <div>
+            <div>{p.subcategoryName}</div>
+            {p.categoryName && <div className="text-xs text-graphite-400">{p.categoryName}</div>}
+          </div>
+        ) : (
+          <span className="text-graphite-300">—</span>
+        ),
     },
     {
       key: 'price',
@@ -151,7 +159,7 @@ export function ProductsListPage() {
       <div className="mb-4 flex flex-wrap items-end gap-3">
         <div className="w-full max-w-xs">
           <Input
-            placeholder="Search by product or category"
+            placeholder="Search by product, subcategory or category"
             value={query.searchInput}
             onChange={(e) => query.setSearchInput(e.target.value)}
             onKeyDown={query.handleSearchKeyDown}

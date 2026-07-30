@@ -8,6 +8,7 @@ import { DashboardPage } from '@/features/dashboard/DashboardPage';
 import { CustomersListPage } from '@/features/customers/CustomersListPage';
 import { ProductsListPage } from '@/features/inventory/ProductsListPage';
 import { CategoriesPage } from '@/features/inventory/CategoriesPage';
+import { SubcategoriesPage } from '@/features/inventory/SubcategoriesPage';
 import { SalesListPage } from '@/features/sales/SalesListPage';
 import { SaleFormPage } from '@/features/sales/SaleFormPage';
 import { SaleDetailPage } from '@/features/sales/SaleDetailPage';
@@ -30,6 +31,7 @@ export function AppRoutes() {
         <Route path="/customers" element={<CustomersListPage />} />
         <Route path="/inventory/products" element={<ProductsListPage />} />
         <Route path="/inventory/categories" element={<CategoriesPage />} />
+        <Route path="/inventory/subcategories" element={<SubcategoriesPage />} />
         <Route path="/sales" element={<SalesListPage />} />
         <Route path="/sales/new" element={<SaleFormPage />} />
         <Route path="/sales/:id/edit" element={<SaleFormPage />} />

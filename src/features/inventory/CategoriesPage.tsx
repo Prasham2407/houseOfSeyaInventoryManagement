@@ -67,10 +67,10 @@ export function CategoriesPage() {
     },
     {
       key: 'count',
-      header: 'Products',
+      header: 'Subcategories',
       align: 'right',
-      sortField: 'productCount',
-      render: (c) => <Badge tone="neutral">{c.productCount}</Badge>,
+      sortField: 'subcategoryCount',
+      render: (c) => <Badge tone="neutral">{c.subcategoryCount}</Badge>,
     },
     {
       key: 'actions',

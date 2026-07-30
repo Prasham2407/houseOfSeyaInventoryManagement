@@ -13,6 +13,12 @@ export const categoryKeys = {
   page: (params: api.FetchCategoriesPageParams) => ['categories', 'page', params] as const,
 };
 
+export const subcategoryKeys = {
+  all: ['subcategories'] as const,
+  list: (categoryId?: string) => ['subcategories', 'list', categoryId ?? null] as const,
+  page: (params: api.FetchSubcategoriesPageParams) => ['subcategories', 'page', params] as const,
+};
+
 export function useProducts() {
   return useQuery({ queryKey: productKeys.all, queryFn: api.fetchProducts });
 }
@@ -48,6 +54,7 @@ export function useCreateProduct() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: productKeys.all });
       queryClient.invalidateQueries({ queryKey: categoryKeys.all });
+      queryClient.invalidateQueries({ queryKey: subcategoryKeys.all });
     },
   });
 }
@@ -59,6 +66,7 @@ export function useUpdateProduct() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: productKeys.all });
       queryClient.invalidateQueries({ queryKey: categoryKeys.all });
+      queryClient.invalidateQueries({ queryKey: subcategoryKeys.all });
     },
   });
 }
@@ -70,6 +78,7 @@ export function useDeleteProduct() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: productKeys.all });
       queryClient.invalidateQueries({ queryKey: categoryKeys.all });
+      queryClient.invalidateQueries({ queryKey: subcategoryKeys.all });
     },
   });
 }
@@ -119,5 +128,53 @@ export function useDeleteCategory() {
   return useMutation({
     mutationFn: api.deleteCategory,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: categoryKeys.all }),
+  });
+}
+
+export function useSubcategories(categoryId?: string) {
+  return useQuery({
+    queryKey: subcategoryKeys.list(categoryId),
+    queryFn: () => api.fetchSubcategories(categoryId),
+  });
+}
+
+export function useSubcategoriesPage(params: api.FetchSubcategoriesPageParams) {
+  return useQuery({
+    queryKey: subcategoryKeys.page(params),
+    queryFn: () => api.fetchSubcategoriesPage(params),
+    placeholderData: (previousData) => previousData,
+  });
+}
+
+export function useCreateSubcategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.createSubcategory,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: subcategoryKeys.all });
+      queryClient.invalidateQueries({ queryKey: categoryKeys.all });
+    },
+  });
+}
+
+export function useUpdateSubcategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: api.SubcategoryInput }) => api.updateSubcategory(id, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: subcategoryKeys.all });
+      queryClient.invalidateQueries({ queryKey: categoryKeys.all });
+    },
+  });
+}
+
+export function useDeleteSubcategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.deleteSubcategory,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: subcategoryKeys.all });
+      queryClient.invalidateQueries({ queryKey: categoryKeys.all });
+    },
   });
 }

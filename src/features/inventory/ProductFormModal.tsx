@@ -1,9 +1,9 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Button, Input, Modal, Select } from '@/components/ui';
-import { useCategories, useCreateProduct, useUpdateProduct } from './hooks';
+import { useCreateProduct, useSubcategories, useUpdateProduct } from './hooks';
 import type { Product } from '@/types';
 
 const schema = z.object({
@@ -13,7 +13,7 @@ const schema = z.object({
   unitPrice: z.coerce.number().positive('Must be greater than 0'),
   quantityInStock: z.coerce.number().int().min(0, 'Cannot be negative'),
   reorderLevel: z.coerce.number().int().min(0, 'Cannot be negative'),
-  categoryId: z.string().optional(),
+  subcategoryId: z.string().optional(),
 });
 
 type FormValues = z.input<typeof schema>;
@@ -29,7 +29,7 @@ export function ProductFormModal({
   product?: Product | null;
 }) {
   const isEditing = !!product;
-  const { data: categories } = useCategories();
+  const { data: subcategories } = useSubcategories();
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
 
@@ -49,10 +49,19 @@ export function ProductFormModal({
         unitPrice: product?.unitPrice ?? 0,
         quantityInStock: product?.quantityInStock ?? 0,
         reorderLevel: product?.reorderLevel ?? 0,
-        categoryId: product?.categoryId ?? '',
+        subcategoryId: product?.subcategoryId ?? '',
       });
     }
   }, [isOpen, product, reset]);
+
+  const subcategoriesByCategory = useMemo(() => {
+    const groups = new Map<string, { categoryName: string; items: typeof subcategories }>();
+    for (const s of subcategories ?? []) {
+      if (!groups.has(s.categoryId)) groups.set(s.categoryId, { categoryName: s.categoryName, items: [] });
+      groups.get(s.categoryId)!.items!.push(s);
+    }
+    return [...groups.values()];
+  }, [subcategories]);
 
   const onSubmit = async (values: FormOutput) => {
     if (isEditing && product) {
@@ -82,16 +91,20 @@ export function ProductFormModal({
       <form id="product-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input label="SKU" placeholder="FAB-COT-001" error={errors.sku?.message} {...register('sku')} />
-          <Select label="Category" error={errors.categoryId?.message} {...register('categoryId')}>
-            <option value="">Uncategorized</option>
-            {categories?.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </Select>
+          <Input label="Product name" placeholder="Cotton Poplin — Ivory" error={errors.name?.message} {...register('name')} />
         </div>
-        <Input label="Product name" placeholder="Cotton Poplin — Ivory" error={errors.name?.message} {...register('name')} />
+        <Select label="Subcategory" error={errors.subcategoryId?.message} {...register('subcategoryId')}>
+          <option value="">Uncategorized</option>
+          {subcategoriesByCategory.map((group) => (
+            <optgroup key={group.categoryName} label={group.categoryName}>
+              {group.items?.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </Select>
         <Input label="Description (optional)" placeholder="Short description" error={errors.description?.message} {...register('description')} />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Input label="Unit price" type="number" step="0.01" min="0" error={errors.unitPrice?.message} {...register('unitPrice')} />

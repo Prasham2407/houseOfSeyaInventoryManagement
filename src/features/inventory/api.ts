@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/apiClient';
-import type { Category, PaginatedResult, Product, SortDir, StockMovement } from '@/types';
+import type { Category, PaginatedResult, Product, SortDir, StockMovement, Subcategory } from '@/types';
 
 export interface ProductInput {
   sku: string;
@@ -8,11 +8,16 @@ export interface ProductInput {
   unitPrice: number;
   quantityInStock: number;
   reorderLevel: number;
-  categoryId?: string;
+  subcategoryId?: string;
 }
 
 export interface CategoryInput {
   name: string;
+}
+
+export interface SubcategoryInput {
+  name: string;
+  categoryId: string;
 }
 
 export type StockFilter = 'all' | 'low';
@@ -32,6 +37,15 @@ export interface FetchCategoriesPageParams {
   search?: string;
   sortBy?: string;
   sortDir?: SortDir;
+}
+
+export interface FetchSubcategoriesPageParams {
+  page: number;
+  pageSize: number;
+  search?: string;
+  sortBy?: string;
+  sortDir?: SortDir;
+  categoryId?: string;
 }
 
 export async function fetchProducts(): Promise<Product[]> {
@@ -95,4 +109,30 @@ export async function updateCategory(id: string, input: CategoryInput): Promise<
 
 export async function deleteCategory(id: string): Promise<void> {
   await apiClient.delete(`/inventory/categories/${id}`);
+}
+
+export async function fetchSubcategories(categoryId?: string): Promise<Subcategory[]> {
+  const { data } = await apiClient.get<Subcategory[]>('/inventory/subcategories', { params: { categoryId } });
+  return data;
+}
+
+export async function fetchSubcategoriesPage(
+  params: FetchSubcategoriesPageParams,
+): Promise<PaginatedResult<Subcategory>> {
+  const { data } = await apiClient.get<PaginatedResult<Subcategory>>('/inventory/subcategories', { params });
+  return data;
+}
+
+export async function createSubcategory(input: SubcategoryInput): Promise<Subcategory> {
+  const { data } = await apiClient.post<Subcategory>('/inventory/subcategories', input);
+  return data;
+}
+
+export async function updateSubcategory(id: string, input: SubcategoryInput): Promise<Subcategory> {
+  const { data } = await apiClient.patch<Subcategory>(`/inventory/subcategories/${id}`, input);
+  return data;
+}
+
+export async function deleteSubcategory(id: string): Promise<void> {
+  await apiClient.delete(`/inventory/subcategories/${id}`);
 }
