@@ -112,7 +112,7 @@ function SalesReportTab() {
     { key: 'saleNumber', header: 'Sale #', render: (s) => <span className="font-medium text-graphite-900">{s.saleNumber}</span> },
     { key: 'customer', header: 'Customer', render: (s) => s.customerName },
     { key: 'status', header: 'Status', render: (s) => <SaleStatusBadge status={s.status as SaleStatus} /> },
-    { key: 'total', header: 'Total', align: 'right', render: (s) => formatCurrency(s.total) },
+    { key: 'total', header: 'Total', render: (s) => formatCurrency(s.total) },
     { key: 'date', header: 'Date', render: (s) => new Date(s.createdAt).toLocaleDateString() },
   ];
 

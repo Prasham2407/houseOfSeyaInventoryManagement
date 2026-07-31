@@ -86,19 +86,17 @@ export function ProductsListPage() {
     {
       key: 'price',
       header: 'Unit price',
-      align: 'right',
       sortField: 'unitPrice',
       render: (p) => formatCurrency(p.unitPrice),
     },
     {
       key: 'stock',
       header: 'Stock',
-      align: 'right',
       sortField: 'quantityInStock',
       render: (p) => {
         const isLow = p.quantityInStock <= p.reorderLevel;
         return (
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex items-center gap-2">
             <span className={isLow ? 'font-medium text-amber-600' : 'text-graphite-700'}>{p.quantityInStock}</span>
             {isLow && <Badge tone="warning">Low</Badge>}
           </div>
