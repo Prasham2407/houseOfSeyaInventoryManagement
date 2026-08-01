@@ -1,5 +1,20 @@
+import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, Users, Package, Tags, Layers, ShoppingCart, Truck, ClipboardList, BarChart3, UserCog, LogOut } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Users,
+  Package,
+  Tags,
+  Layers,
+  ShoppingCart,
+  Truck,
+  ClipboardList,
+  BarChart3,
+  UserCog,
+  LogOut,
+  ChevronDown,
+  MoreHorizontal,
+} from 'lucide-react';
 import { useAuth } from '@/features/auth/useAuth';
 import { cn } from '@/lib/cn';
 
@@ -10,23 +25,85 @@ interface NavItem {
   end?: boolean;
 }
 
-const baseNavItems: NavItem[] = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/customers', label: 'Customers', icon: Users },
-  { to: '/vendors', label: 'Vendors', icon: Truck },
-  { to: '/inventory/categories', label: 'Categories', icon: Tags },
-  { to: '/inventory/subcategories', label: 'Subcategories', icon: Layers },
-  { to: '/inventory/products', label: 'Products', icon: Package },
-  { to: '/sales', label: 'Sales', icon: ShoppingCart },
-  { to: '/purchases', label: 'Purchases', icon: ClipboardList },
-  { to: '/reports', label: 'Reports', icon: BarChart3 },
+interface NavGroup {
+  key: string;
+  label: string | null;
+  items: NavItem[];
+}
+
+const baseNavGroups: NavGroup[] = [
+  {
+    key: 'insights',
+    label: 'Insights',
+    items: [
+      { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
+      { to: '/reports', label: 'Reports', icon: BarChart3 },
+    ],
+  },
+  {
+    key: 'sales',
+    label: 'Sales Management',
+    items: [
+      { to: '/sales', label: 'Sales', icon: ShoppingCart },
+      { to: '/customers', label: 'Customers', icon: Users },
+    ],
+  },
+  {
+    key: 'purchases',
+    label: 'Purchase Management',
+    items: [
+      { to: '/purchases', label: 'Purchases', icon: ClipboardList },
+      { to: '/vendors', label: 'Vendors', icon: Truck },
+    ],
+  },
+  {
+    key: 'products',
+    label: 'Products',
+    items: [
+      { to: '/inventory/products', label: 'Products', icon: Package },
+      { to: '/inventory/categories', label: 'Categories', icon: Tags },
+      { to: '/inventory/subcategories', label: 'Subcategories', icon: Layers },
+    ],
+  },
 ];
 
-const adminNavItem: NavItem = { to: '/users', label: 'Users', icon: UserCog };
+const adminNavGroup: NavGroup = {
+  key: 'admin',
+  label: 'Admin',
+  items: [{ to: '/users', label: 'Users', icon: UserCog }],
+};
+
+const mobilePrimaryPaths = ['/', '/sales', '/purchases', '/inventory/products'];
+
+const COLLAPSE_STORAGE_KEY = 'hos-nav-collapsed-groups';
+
+function loadCollapsedGroups(): Record<string, boolean> {
+  try {
+    const raw = localStorage.getItem(COLLAPSE_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
 
 export function AppShell() {
   const { user, logout } = useAuth();
-  const navItems = user?.role === 'ADMIN' ? [...baseNavItems, adminNavItem] : baseNavItems;
+  const navGroups = user?.role === 'ADMIN' ? [...baseNavGroups, adminNavGroup] : baseNavGroups;
+  const allItems = navGroups.flatMap((g) => g.items);
+
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(loadCollapsedGroups);
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
+
+  function toggleGroup(key: string) {
+    setCollapsed((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      localStorage.setItem(COLLAPSE_STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  }
+
+  const mobilePrimaryItems = allItems.filter((item) => mobilePrimaryPaths.includes(item.to));
+  const mobileMoreItems = allItems.filter((item) => !mobilePrimaryPaths.includes(item.to));
 
   return (
     <div className="flex min-h-screen flex-col bg-graphite-50 lg:flex-row">
@@ -42,26 +119,50 @@ export function AppShell() {
           </div>
         </div>
 
-        <nav className="flex-1 space-y-0.5 px-3 py-2">
-          {navItems.map((item) => {
-            const Icon = item.icon;
+        <nav className="flex-1 space-y-3 overflow-y-auto px-3 py-2">
+          {navGroups.map((group) => {
+            const isCollapsed = collapsed[group.key];
             return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                className={({ isActive }) =>
-                  cn(
-                    'flex items-center gap-2.5 rounded-md px-3 py-2 text-[13px] font-medium transition-colors',
-                    isActive
-                      ? 'bg-brand-50 text-brand-700'
-                      : 'text-graphite-600 hover:bg-graphite-50 hover:text-graphite-900',
-                  )
-                }
-              >
-                <Icon className="h-[17px] w-[17px] shrink-0" strokeWidth={2} />
-                {item.label}
-              </NavLink>
+              <div key={group.key}>
+                {group.label && (
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(group.key)}
+                    className="flex w-full cursor-pointer items-center justify-between rounded-md px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-graphite-400 hover:text-graphite-600"
+                  >
+                    {group.label}
+                    <ChevronDown
+                      className={cn('h-3.5 w-3.5 transition-transform', isCollapsed && '-rotate-90')}
+                      strokeWidth={2.5}
+                    />
+                  </button>
+                )}
+                {!isCollapsed && (
+                  <div className="space-y-0.5">
+                    {group.items.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <NavLink
+                          key={item.to}
+                          to={item.to}
+                          end={item.end}
+                          className={({ isActive }) =>
+                            cn(
+                              'flex items-center gap-2.5 rounded-md px-3 py-2 text-[13px] font-medium transition-colors',
+                              isActive
+                                ? 'bg-brand-50 text-brand-700'
+                                : 'text-graphite-600 hover:bg-graphite-50 hover:text-graphite-900',
+                            )
+                          }
+                        >
+                          <Icon className="h-[17px] w-[17px] shrink-0" strokeWidth={2} />
+                          {item.label}
+                        </NavLink>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
         </nav>
@@ -113,9 +214,46 @@ export function AppShell() {
         </div>
       </main>
 
+      {/* Mobile "more" sheet (< lg) */}
+      {mobileMoreOpen && (
+        <div
+          className="fixed inset-0 z-40 flex items-end bg-black/30 lg:hidden"
+          onClick={() => setMobileMoreOpen(false)}
+        >
+          <div
+            className="w-full rounded-t-xl bg-white p-3 pb-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-graphite-200" />
+            <div className="grid grid-cols-3 gap-1">
+              {mobileMoreItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.end}
+                    onClick={() => setMobileMoreOpen(false)}
+                    className={({ isActive }) =>
+                      cn(
+                        'flex flex-col items-center justify-center gap-1 rounded-md px-2 py-3 text-[11px] font-medium',
+                        isActive ? 'text-brand-700' : 'text-graphite-600',
+                      )
+                    }
+                  >
+                    <Icon className="h-5 w-5 shrink-0" strokeWidth={2} />
+                    <span className="max-w-full truncate text-center">{item.label}</span>
+                  </NavLink>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Mobile bottom tab bar (< lg) */}
       <nav className="sticky bottom-0 z-30 flex items-stretch justify-around border-t border-graphite-200 bg-white lg:hidden">
-        {navItems.map((item) => {
+        {mobilePrimaryItems.map((item) => {
           const Icon = item.icon;
           return (
             <NavLink
@@ -134,6 +272,13 @@ export function AppShell() {
             </NavLink>
           );
         })}
+        <button
+          onClick={() => setMobileMoreOpen(true)}
+          className="flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 py-2 text-[10px] font-medium text-graphite-500 hover:text-graphite-800"
+        >
+          <MoreHorizontal className="h-5 w-5 shrink-0" strokeWidth={2} />
+          <span className="max-w-full truncate">More</span>
+        </button>
       </nav>
     </div>
   );
