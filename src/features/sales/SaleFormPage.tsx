@@ -138,7 +138,7 @@ export function SaleFormPage() {
                 onChange={(customer: Customer) => setCustomerId(customer.id)}
                 getOptionLabel={(c) => c.name}
                 getOptionValue={(c) => c.id}
-                getOptionSublabel={(c) => c.email ?? undefined}
+                getOptionSublabel={(c) => c.email ?? null}
                 placeholder="Search customer by name or email…"
                 addNewLabel="Add new customer"
                 onAddNew={() => setCustomerModalOpen(true)}

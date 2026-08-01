@@ -143,7 +143,7 @@ export function PurchaseFormPage() {
                 onChange={(vendor: Vendor) => setVendorId(vendor.id)}
                 getOptionLabel={(v) => v.companyName}
                 getOptionValue={(v) => v.id}
-                getOptionSublabel={(v) => v.contactPerson ?? undefined}
+                getOptionSublabel={(v) => v.contactPerson ?? null}
                 placeholder="Search vendor by company or contact…"
                 addNewLabel="Add new vendor"
                 onAddNew={() => setVendorModalOpen(true)}
